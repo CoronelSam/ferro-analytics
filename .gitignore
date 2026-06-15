@@ -1,6 +1,7 @@
 # ── Archivos binarios generados por el sistema ──────────
 # Se regeneran al importar los CSV; no forman parte del código fuente.
 data/binarios/
+data/reportes/
 
 # ── Python ───────────────────────────────────────────────
 __pycache__/

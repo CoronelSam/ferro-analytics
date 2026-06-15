@@ -4,12 +4,15 @@ Coordina entrada/salida del usuario; la lógica de negocio vive en los
 módulos importador, almacenamiento y reportes.
 """
 
+import csv
 import os
 from datetime import datetime
 
 import src.almacenamiento as alm
 import src.importador as imp
 import src.reportes as rep
+
+DIRECTORIO_REPORTES = os.path.join("data", "reportes")
 
 # ──────────────────────────────────────────────
 # Utilidades de presentación
@@ -37,6 +40,36 @@ def _seccion(texto: str) -> None:
 
 def _pausar() -> None:
     input("\nPresione Enter para continuar...")
+
+
+def _ofrecer_exportar(datos: list, nombre_sugerido: str) -> None:
+    """
+    Pregunta al usuario si desea exportar los datos a CSV.
+    Escribe el archivo en data/reportes/ usando csv.writer.
+
+    Recibe:
+        datos           : lista de dicts (salida de cualquier función de reportes).
+        nombre_sugerido : nombre de archivo por defecto (sin extensión).
+    """
+    if not datos:
+        return
+    respuesta = input("\n  ¿Exportar a CSV? [s/N]: ").strip().lower()
+    if respuesta != "s":
+        return
+
+    nombre_default = f"{nombre_sugerido}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+    entrada = input(f"  Nombre del archivo [{nombre_default}]: ").strip()
+    nombre_archivo = entrada if entrada else nombre_default
+
+    os.makedirs(DIRECTORIO_REPORTES, exist_ok=True)
+    ruta = os.path.join(DIRECTORIO_REPORTES, nombre_archivo)
+
+    with open(ruta, "w", newline="", encoding="utf-8") as f:
+        escritor = csv.DictWriter(f, fieldnames=datos[0].keys())
+        escritor.writeheader()
+        escritor.writerows(datos)
+
+    print(f"  Exportado: {ruta}")
 
 
 def _pedir_opcion(opciones: set, mensaje: str = "Opción") -> str:
@@ -282,6 +315,7 @@ def _reporte_stock_categoria(productos: list, categorias: list) -> None:
     total_stock = sum(r["stock_total"] for r in datos)
     total_valor = sum(r["valor_total"] for r in datos)
     print(f"  {'TOTAL':<20} {len(productos):>9} {total_stock:>8} {total_valor:>12.2f}")
+    _ofrecer_exportar(datos, "stock_por_categoria")
     _pausar()
 
 
@@ -307,6 +341,7 @@ def _reporte_top_inmovilizado(productos: list, movimientos: list) -> None:
         salida = r["ultima_salida"] or "Sin salidas"
         print(f"  {i:<3} {r['codigo']:<10} {r['nombre']:<25} "
               f"{r['stock_actual']:>6} {r['valor_inmovilizado']:>10.2f} {salida:<12}")
+    _ofrecer_exportar(datos, "top_inmovilizado")
     _pausar()
 
 
@@ -334,6 +369,7 @@ def _reporte_ventas_mensuales(movimientos: list, productos: list, categorias: li
             _linea("·")
             mes_actual = encabezado
         print(f"    {r['nombre_categoria']:<20} {r['unidades']:>6} uds")
+    _ofrecer_exportar(datos, "ventas_mensuales")
     _pausar()
 
 
@@ -376,6 +412,7 @@ def _ver_alertas() -> None:
               f"{a['stock_actual']:>7} {a['minimo']:>7} {a['diferencia']:>7}")
     _linea()
     print(f"  {len(alertas)} producto(s) con stock bajo.")
+    _ofrecer_exportar(alertas, "alertas_stock_bajo")
     _pausar()
 
 
