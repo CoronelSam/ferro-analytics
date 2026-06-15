@@ -1,0 +1,53 @@
+codigo,nombre,id_categoria,precio_unitario,stock_actual,stock_minimo
+TORN-M4,Tornillo M4 x 20mm zinc,1,0.08,2000,500
+TORN-M6,Tornillo M6 x 30mm zinc,1,0.12,1500,400
+TORN-M8,Tornillo M8 x 40mm zinc,1,0.18,900,300
+TORN-M10,Tornillo M10 x 50mm zinc,1,0.25,600,200
+TURC-M6,Tuerca M6 hexagonal zinc,1,0.06,3000,800
+TURC-M8,Tuerca M8 hexagonal zinc,1,0.09,2500,700
+ROND-M6,Rondana plana M6 galv.,1,0.04,4000,1000
+ROND-M8,Rondana plana M8 galv.,1,0.05,3500,900
+CLAV-2P,"Clavo 2"" común caja 1kg",1,1.9,80,30
+CLAV-3P,"Clavo 3"" común caja 1kg",1,2.1,60,20
+MART-1A,Martillo carpintero 16 oz,2,12.5,25,10
+MART-2A,Martillo peña 2 lb,2,18.9,2,8
+DEST-PH2,Destornillador Phillips PH2,2,4.2,40,15
+DEST-PL6,Destornillador plano 6mm,2,3.8,35,15
+PLIE-6P,"Alicate de corte 6""",2,8.6,20,8
+PLIE-8P,"Alicate de presión 8""",2,11.3,18,6
+LIAV-10,"Llave ajustable 10""",2,14.0,22,8
+SIER-HK,"Serrucho hoja fina 22""",2,16.5,2,8
+CINT-5M,Cinta métrica 5 m,2,6.9,30,10
+NIVE-60,Nivel de burbuja 60 cm,2,22.0,3,10
+TALDR-1,Taladro percutor 650W,3,85.0,9,3
+TALDR-2,Taladro inalámbrico 20V,3,145.0,6,2
+ESMER-1,"Esmeriladora angular 4.5""",3,62.0,11,3
+ESMER-2,"Esmeriladora angular 7""",3,95.0,5,2
+SIER-C1,"Sierra circular 7.25""",3,120.0,7,2
+LIJAD-1,Lijadora orbital 1/4 hoja,3,55.0,1,5
+CALAD-1,Caladora 500W,3,78.0,1,4
+SOPLA-1,Sopladora/aspiradora 600W,3,49.0,6,2
+PINT-BL,Pintura látex blanco 4L,4,18.5,55,20
+PINT-BG,Pintura látex beige 4L,4,18.5,40,15
+PINT-GR,Pintura látex gris 4L,4,18.5,35,15
+ESMA-BL,Esmalte blanco brillante 1L,4,11.2,30,10
+ESMA-NG,Esmalte negro mate 1L,4,11.2,25,10
+BROD-2P,"Brocha cerda 2""",4,3.5,60,20
+BROD-4P,"Brocha cerda 4""",4,5.8,45,15
+ROLLO-1,"Rodillo felpa 9"" + bandeja",4,8.4,28,10
+CABL-12,Cable THW cal.12 rollo 50m,5,38.0,18,5
+CABL-14,Cable THW cal.14 rollo 50m,5,28.0,22,5
+TOMA-SNC,Tomacorriente sencillo,5,2.1,120,40
+TOMA-DBL,Tomacorriente doble,5,3.4,90,30
+INTE-SNC,Interruptor sencillo,5,1.8,150,50
+FOCOS-L9,Foco LED 9W E27,5,2.9,200,60
+FOCOS-L15,Foco LED 15W E27,5,4.2,160,50
+TABL-1P,Tablero 1 fase 4 circuitos,5,32.0,7,3
+TABL-2P,Tablero 1 fase 8 circuitos,5,55.0,1,5
+TUBO-1P,"Tubo PVC 1"" x 6m",6,5.6,42,15
+TUBO-2P,"Tubo PVC 2"" x 6m",6,9.8,30,10
+CODE-1P,"Codo PVC 1"" 90°",6,0.45,300,100
+CODE-2P,"Codo PVC 2"" 90°",6,0.8,200,60
+LLAV-1P,"Llave de paso 1"" bronce",6,14.5,16,5
+LLAV-12,"Llave de paso 1/2"" bronce",6,10.2,24,8
+SELL-TF,Cinta teflón rollo 12mm,6,0.6,350,100

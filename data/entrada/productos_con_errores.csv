@@ -1,0 +1,9 @@
+codigo,nombre,id_categoria,precio_unitario,stock_actual,stock_minimo
+PROD-V1,Válido normal,1,5.00,50,10
+,Sin código,1,5.00,10,5
+PROD-V2,,2,3.50,20,5
+PROD-V3,Precio negativo,1,-2.00,15,5
+PROD-V4,Stock negativo,2,8.00,-3,5
+PROD-V5,Categoría no entero,X,4.00,10,5
+PROD-V6,Válido también,3,12.00,8,3
+CODIGOMUYLARGO,Código muy largo,1,1.00,5,2

@@ -1,0 +1,32 @@
+# ── Archivos binarios generados por el sistema ──────────
+# Se regeneran al importar los CSV; no forman parte del código fuente.
+data/binarios/
+
+# ── Python ───────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+
+# ── Entornos virtuales ───────────────────────────────────
+venv/
+env/
+.venv/
+.env
+
+# ── Jupyter ──────────────────────────────────────────────
+.ipynb_checkpoints/
+
+# ── macOS ────────────────────────────────────────────────
+.DS_Store
+
+# ── IDEs ─────────────────────────────────────────────────
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+.claude
+
+# ── Distribución / build ─────────────────────────────────
+dist/
+build/
+*.egg-info/
