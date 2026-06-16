@@ -204,7 +204,7 @@ def _consultar_inventario() -> None:
 
     filtro = input("  Filtrar por código/nombre (Enter para ver todos): ").strip().lower()
 
-    encontrados = 0
+    visibles = []
     for p in sorted(productos, key=lambda x: x.codigo):
         if filtro and filtro not in p.codigo.lower() and filtro not in p.nombre.lower():
             continue
@@ -212,10 +212,19 @@ def _consultar_inventario() -> None:
         alerta = " !" if p.stock_actual < p.stock_minimo else ""
         print(f"  {p.codigo:<10} {p.nombre:<25} {cat:<15} "
               f"{p.precio_unitario:>8.2f} {p.stock_actual:>6}{alerta:>3} {p.stock_minimo:>4}")
-        encontrados += 1
+        visibles.append(p)
 
     _linea()
-    print(f"  Total: {encontrados} producto(s)")
+    if visibles:
+        precio_promedio = sum(p.precio_unitario for p in visibles) / len(visibles)
+        stock_total     = sum(p.stock_actual for p in visibles)
+        valor_total     = sum(p.stock_actual * p.precio_unitario for p in visibles)
+        print(f"  {len(visibles)} producto(s)  |  "
+              f"Precio prom.: L{precio_promedio:.2f}  |  "
+              f"Stock total: {stock_total}  |  "
+              f"Valor total: L{valor_total:,.2f}")
+    else:
+        print("  Sin resultados para el filtro aplicado.")
     _pausar()
 
 
@@ -306,7 +315,7 @@ def _reporte_stock_categoria(productos: list, categorias: list) -> None:
         return
 
     datos = rep.stock_por_categoria(productos, categorias)
-    print(f"\n  {'CATEGORÍA':<20} {'PRODUCTOS':>9} {'STOCK':>8} {'VALOR ($)':>12}")
+    print(f"\n  {'CATEGORÍA':<20} {'PRODUCTOS':>9} {'STOCK':>8} {'VALOR (L)':>12}")
     _linea()
     for r in datos:
         print(f"  {r['nombre']:<20} {r['num_productos']:>9} "
@@ -335,7 +344,7 @@ def _reporte_top_inmovilizado(productos: list, movimientos: list) -> None:
         _pausar()
         return
 
-    print(f"\n  {'#':<3} {'CÓDIGO':<10} {'NOMBRE':<25} {'STOCK':>6} {'VALOR ($)':>10} {'ÚLT. SALIDA':<12}")
+    print(f"\n  {'#':<3} {'CÓDIGO':<10} {'NOMBRE':<25} {'STOCK':>6} {'VALOR (L)':>10} {'ÚLT. SALIDA':<12}")
     _linea()
     for i, r in enumerate(datos, 1):
         salida = r["ultima_salida"] or "Sin salidas"
