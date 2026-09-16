@@ -90,3 +90,66 @@ class ResultadoImportacion(BaseModel):
     rechazados: list[FilaRechazada]
     insertados: int | None = None
     actualizados: int | None = None
+
+
+# ──────────────────────────────────────────────
+# Analítica: clasificación ABC-XYZ (src/clasificacion.py)
+# ──────────────────────────────────────────────
+
+class ClasificacionABCXYZ(BaseModel):
+    codigo: str
+    nombre: str
+    valor_consumo: float
+    clase_abc: str
+    cv_demanda: float | None
+    clase_xyz: str
+    celda: str
+    recomendacion: str
+
+
+class CeldaResumen(BaseModel):
+    celda: str
+    clase_abc: str
+    clase_xyz: str
+    num_productos: int
+    valor_consumo_total: float
+    recomendacion: str
+
+
+# ──────────────────────────────────────────────
+# Analítica: predicción de demanda (src/prediccion.py)
+# ──────────────────────────────────────────────
+
+class ComparacionModelo(BaseModel):
+    modelo: str
+    mae: float
+    mape: float | None
+
+
+class PuntoMensual(BaseModel):
+    mes: str
+    unidades: int
+
+
+class PronosticoCategoria(BaseModel):
+    id_categoria: int
+    nombre_categoria: str
+    meses_pronosticados: list[str]
+    comparacion_modelos: list[ComparacionModelo]
+    mejor_modelo: str
+    pronostico: list[float]
+    serie_historica: list[PuntoMensual]
+
+
+class PronosticoProducto(BaseModel):
+    codigo: str
+    meses_pronosticados: list[str]
+    comparacion_modelos: list[ComparacionModelo]
+    mejor_modelo: str
+    pronostico: list[float]
+    serie_historica: list[PuntoMensual]
+    demanda_diaria_media: float
+    demanda_diaria_desviacion: float
+    z: float
+    stock_seguridad: float
+    punto_reorden: float

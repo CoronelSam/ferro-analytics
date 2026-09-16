@@ -75,3 +75,65 @@ export interface ResultadoImportacion {
 }
 
 export type EntidadImportable = 'categorias' | 'productos' | 'movimientos'
+
+// ──────────────────────────────────────────────
+// Analítica: clasificación ABC-XYZ y predicción de demanda
+// ──────────────────────────────────────────────
+
+export type ClaseABC = 'A' | 'B' | 'C'
+export type ClaseXYZ = 'X' | 'Y' | 'Z'
+
+export interface ClasificacionABCXYZ {
+  codigo: string
+  nombre: string
+  valor_consumo: number
+  clase_abc: ClaseABC
+  cv_demanda: number | null
+  clase_xyz: ClaseXYZ
+  celda: string
+  recomendacion: string
+}
+
+export interface CeldaResumen {
+  celda: string
+  clase_abc: ClaseABC
+  clase_xyz: ClaseXYZ
+  num_productos: number
+  valor_consumo_total: number
+  recomendacion: string
+}
+
+export interface ComparacionModelo {
+  modelo: 'ingenuo' | 'media_movil' | 'suavizado_exponencial' | 'regresion'
+  mae: number
+  mape: number | null
+}
+
+export interface PuntoMensual {
+  mes: string
+  unidades: number
+}
+
+export interface PronosticoCategoria {
+  id_categoria: number
+  nombre_categoria: string
+  meses_pronosticados: string[]
+  comparacion_modelos: ComparacionModelo[]
+  mejor_modelo: string
+  pronostico: number[]
+  serie_historica: PuntoMensual[]
+}
+
+export interface PronosticoProducto {
+  codigo: string
+  meses_pronosticados: string[]
+  comparacion_modelos: ComparacionModelo[]
+  mejor_modelo: string
+  pronostico: number[]
+  serie_historica: PuntoMensual[]
+  demanda_diaria_media: number
+  demanda_diaria_desviacion: number
+  z: number
+  stock_seguridad: number
+  punto_reorden: number
+}

@@ -105,6 +105,16 @@ export function IconoAlerta({ size = 20, className }: Props) {
   )
 }
 
+export function IconoAnalitica({ size = 20, className }: Props) {
+  return (
+    <svg viewBox="0 0 20 20" width={size} height={size} className={className} {...base}>
+      <path d="M2.5 17h15" />
+      <path d="M3.5 13.2 7.8 9l2.9 2.6 5.8-6.3" />
+      <path d="M13.2 5.3h3.3v3.3" />
+    </svg>
+  )
+}
+
 export function IconoDescargar({ size = 20, className }: Props) {
   return (
     <svg viewBox="0 0 20 20" width={size} height={size} className={className} {...base}>

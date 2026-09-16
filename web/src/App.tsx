@@ -6,6 +6,7 @@ import { Movimientos } from './paginas/Movimientos'
 import { Reportes } from './paginas/Reportes'
 import { Alertas } from './paginas/Alertas'
 import { Importar } from './paginas/Importar'
+import { Analitica } from './paginas/Analitica'
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
         <Route path="inventario" element={<Inventario />} />
         <Route path="movimientos" element={<Movimientos />} />
         <Route path="reportes" element={<Reportes />} />
+        <Route path="analitica" element={<Analitica />} />
         <Route path="alertas" element={<Alertas />} />
         <Route path="importar" element={<Importar />} />
       </Route>

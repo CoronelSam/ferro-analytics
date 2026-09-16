@@ -13,7 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from api import datos
-from api.rutas import inventario, reportes
+from api.rutas import analitica, inventario, reportes
 from src.excepciones import (
     ArchivoCorrupto,
     DatosInsuficientes,
@@ -46,6 +46,7 @@ app.add_middleware(
 
 app.include_router(inventario.router)
 app.include_router(reportes.router)
+app.include_router(analitica.router)
 
 
 # ──────────────────────────────────────────────
@@ -56,32 +57,32 @@ app.include_router(reportes.router)
 
 @app.exception_handler(ErrorImportacion)
 def manejar_error_importacion(request: Request, exc: ErrorImportacion):
-    return JSONResponse(status_code=400, content={"detalle": exc.mensaje})
+    return JSONResponse(status_code=400, content={"detail": exc.mensaje})
 
 
 @app.exception_handler(ArchivoCorrupto)
 def manejar_archivo_corrupto(request: Request, exc: ArchivoCorrupto):
-    return JSONResponse(status_code=500, content={"detalle": exc.mensaje})
+    return JSONResponse(status_code=500, content={"detail": exc.mensaje})
 
 
 @app.exception_handler(ErrorAlmacenamiento)
 def manejar_error_almacenamiento(request: Request, exc: ErrorAlmacenamiento):
-    return JSONResponse(status_code=500, content={"detalle": exc.mensaje})
+    return JSONResponse(status_code=500, content={"detail": exc.mensaje})
 
 
 @app.exception_handler(DatosInsuficientes)
 def manejar_datos_insuficientes(request: Request, exc: DatosInsuficientes):
-    return JSONResponse(status_code=422, content={"detalle": exc.mensaje})
+    return JSONResponse(status_code=422, content={"detail": exc.mensaje})
 
 
 @app.exception_handler(ErrorPrediccion)
 def manejar_error_prediccion(request: Request, exc: ErrorPrediccion):
-    return JSONResponse(status_code=422, content={"detalle": exc.mensaje})
+    return JSONResponse(status_code=422, content={"detail": exc.mensaje})
 
 
 @app.exception_handler(FerroAnalyticsError)
 def manejar_error_generico(request: Request, exc: FerroAnalyticsError):
-    return JSONResponse(status_code=500, content={"detalle": exc.mensaje})
+    return JSONResponse(status_code=500, content={"detail": exc.mensaje})
 
 
 @app.get("/api/salud")

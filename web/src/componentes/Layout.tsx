@@ -4,6 +4,7 @@ import {
   IconoInventario,
   IconoMovimientos,
   IconoReportes,
+  IconoAnalitica,
   IconoAlertas,
   IconoImportar,
 } from './Icono'
@@ -14,6 +15,7 @@ const ENLACES = [
   { ruta: '/inventario', etiqueta: 'Inventario', Icono: IconoInventario },
   { ruta: '/movimientos', etiqueta: 'Movimientos', Icono: IconoMovimientos },
   { ruta: '/reportes', etiqueta: 'Reportes', Icono: IconoReportes },
+  { ruta: '/analitica', etiqueta: 'Analítica', Icono: IconoAnalitica },
   { ruta: '/alertas', etiqueta: 'Alertas', Icono: IconoAlertas },
   { ruta: '/importar', etiqueta: 'Importar', Icono: IconoImportar },
 ]

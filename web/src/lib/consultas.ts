@@ -4,11 +4,15 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { importarCSV, obtenerJSON } from './api'
 import type {
   AlertaStockBajo,
+  CeldaResumen,
   Categoria,
+  ClasificacionABCXYZ,
   EntidadImportable,
   Movimiento,
   Producto,
   ProductoInmovilizado,
+  PronosticoCategoria,
+  PronosticoProducto,
   StockPorCategoria,
   VentaMensualCategoria,
 } from './tipos'
@@ -82,6 +86,69 @@ export function useImportaciones() {
   return useQuery({
     queryKey: ['importaciones'],
     queryFn: () => obtenerJSON<string[]>('/api/importaciones'),
+  })
+}
+
+export function useClasificacionABCXYZ() {
+  return useQuery({
+    queryKey: ['analitica', 'abc-xyz'],
+    queryFn: () => obtenerJSON<ClasificacionABCXYZ[]>('/api/analitica/abc-xyz'),
+  })
+}
+
+export function useResumenABCXYZ() {
+  return useQuery({
+    queryKey: ['analitica', 'abc-xyz', 'resumen'],
+    queryFn: () => obtenerJSON<CeldaResumen[]>('/api/analitica/abc-xyz/resumen'),
+  })
+}
+
+export function useProductosPrioritarios() {
+  return useQuery({
+    queryKey: ['analitica', 'prediccion', 'productos-prioritarios'],
+    queryFn: () => obtenerJSON<string[]>('/api/analitica/prediccion/productos-prioritarios'),
+  })
+}
+
+export interface OpcionesPronostico {
+  n?: number
+  nPrueba?: number
+}
+
+export function usePronosticoCategoria(idCategoria: number | null, opciones: OpcionesPronostico = {}) {
+  const parametros = new URLSearchParams()
+  if (opciones.n) parametros.set('n', String(opciones.n))
+  if (opciones.nPrueba) parametros.set('n_prueba', String(opciones.nPrueba))
+
+  return useQuery({
+    queryKey: ['analitica', 'prediccion', 'categoria', idCategoria, opciones],
+    queryFn: () =>
+      obtenerJSON<PronosticoCategoria>(
+        `/api/analitica/prediccion/categoria/${idCategoria}?${parametros}`,
+      ),
+    enabled: idCategoria !== null,
+  })
+}
+
+export interface OpcionesPronosticoProducto extends OpcionesPronostico {
+  tiempoEntregaDias?: number
+  nivelServicio?: number
+}
+
+export function usePronosticoProducto(codigo: string | null, opciones: OpcionesPronosticoProducto = {}) {
+  const parametros = new URLSearchParams()
+  if (opciones.n) parametros.set('n', String(opciones.n))
+  if (opciones.nPrueba) parametros.set('n_prueba', String(opciones.nPrueba))
+  if (opciones.tiempoEntregaDias) parametros.set('tiempo_entrega_dias', String(opciones.tiempoEntregaDias))
+  if (opciones.nivelServicio) parametros.set('nivel_servicio', String(opciones.nivelServicio))
+
+  return useQuery({
+    queryKey: ['analitica', 'prediccion', 'producto', codigo, opciones],
+    queryFn: () =>
+      obtenerJSON<PronosticoProducto>(
+        `/api/analitica/prediccion/producto/${codigo}?${parametros}`,
+      ),
+    enabled: codigo !== null,
   })
 }
 

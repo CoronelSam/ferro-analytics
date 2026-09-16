@@ -9,7 +9,9 @@ import os
 from datetime import datetime
 
 import src.almacenamiento as alm
+import src.clasificacion as clf
 import src.importador as imp
+import src.prediccion as pred
 import src.reportes as rep
 from src.excepciones import ErrorAlmacenamiento, ErrorImportacion, FerroAnalyticsError
 
@@ -429,6 +431,97 @@ def _ver_alertas() -> None:
 
 
 # ──────────────────────────────────────────────
+# Opción 6: Clasificación ABC-XYZ
+# ──────────────────────────────────────────────
+
+def _ver_clasificacion_abc_xyz() -> None:
+    _titulo("CLASIFICACIÓN ABC-XYZ")
+
+    productos = alm.leer_productos()
+    movimientos = alm.leer_movimientos()
+    if not productos:
+        print("  No hay productos almacenados.")
+        _pausar()
+        return
+
+    clasificacion = clf.clasificar_abc_xyz(productos, movimientos)
+    resumen = clf.resumen_matriz(clasificacion)
+
+    print(f"\n  {'CELDA':<6} {'PRODUCTOS':>9} {'VALOR CONSUMO (L)':>18}  RECOMENDACIÓN")
+    _linea()
+    for r in resumen:
+        print(f"  {r['celda']:<6} {r['num_productos']:>9} {r['valor_consumo_total']:>18,.2f}  {r['recomendacion']}")
+
+    _seccion("Detalle por producto")
+    print(f"  {'CÓDIGO':<10} {'NOMBRE':<25} {'VALOR (L)':>12} {'CV':>7} {'CELDA':<6}")
+    _linea()
+    for r in clasificacion:
+        cv_txt = f"{r['cv_demanda']:.2f}" if r["cv_demanda"] is not None else "—"
+        print(f"  {r['codigo']:<10} {r['nombre']:<25} {r['valor_consumo']:>12,.2f} {cv_txt:>7} {r['celda']:<6}")
+
+    _ofrecer_exportar(clasificacion, "clasificacion_abc_xyz")
+    _pausar()
+
+
+# ──────────────────────────────────────────────
+# Opción 7: Predicción de demanda
+# ──────────────────────────────────────────────
+
+def _ver_prediccion_demanda() -> None:
+    _titulo("PREDICCIÓN DE DEMANDA")
+
+    productos = alm.leer_productos()
+    movimientos = alm.leer_movimientos()
+    categorias = alm.leer_categorias()
+    if not movimientos:
+        print("  No hay movimientos almacenados.")
+        _pausar()
+        return
+
+    print("  [1] Por categoría")
+    print("  [2] Por producto (clase A/X: alto valor y demanda estable)")
+    modo = _pedir_opcion({"1", "2"})
+    n = _pedir_entero("  Meses a pronosticar (por defecto 3)", minimo=1)
+
+    if modo == "1":
+        print("\n  Categorías disponibles:")
+        for c in categorias:
+            print(f"    [{c.id}] {c.nombre}")
+        id_categoria = int(_pedir_opcion({str(c.id) for c in categorias}, "  Id de categoría"))
+        resultado = pred.pronosticar_categoria(productos, movimientos, categorias, id_categoria, n=n)
+        _mostrar_pronostico(resultado)
+    else:
+        prioritarios = pred.productos_prioritarios(productos, movimientos)
+        if not prioritarios:
+            print("\n  Ningún producto quedó clasificado como A/X todavía.")
+            _pausar()
+            return
+        print(f"\n  Productos A/X disponibles: {', '.join(prioritarios)}")
+        codigo = _pedir_opcion(set(prioritarios), "  Código de producto")
+        tiempo_entrega = _pedir_entero("  Tiempo de entrega del proveedor en días (por defecto 7)", minimo=1)
+        resultado = pred.pronosticar_producto(productos, movimientos, codigo, n=n, tiempo_entrega_dias=tiempo_entrega)
+        _mostrar_pronostico(resultado)
+        print(f"\n  Punto de reorden        : {resultado['punto_reorden']:.2f} uds")
+        print(f"  Stock de seguridad      : {resultado['stock_seguridad']:.2f} uds")
+        print(f"  Demanda diaria media    : {resultado['demanda_diaria_media']:.2f} uds")
+
+    _pausar()
+
+
+def _mostrar_pronostico(resultado: dict) -> None:
+    print("\n  Comparación de modelos (backtest, menor MAE es mejor):")
+    _linea()
+    for m in resultado["comparacion_modelos"]:
+        marca = "  <- mejor" if m["modelo"] == resultado["mejor_modelo"] else ""
+        mape_txt = f"{m['mape']:.2f}%" if m["mape"] is not None else "—"
+        print(f"    {m['modelo']:<22} MAE: {m['mae']:>9.3f}   MAPE: {mape_txt:>8}{marca}")
+
+    print(f"\n  Pronóstico ({resultado['mejor_modelo']}):")
+    for (anio, mes), valor in zip(resultado["meses_pronosticados"], resultado["pronostico"]):
+        print(f"    {anio}-{mes:02d}: {valor:>10.2f} uds")
+
+
+# ──────────────────────────────────────────────
 # Bucle principal
 # ──────────────────────────────────────────────
 
@@ -441,8 +534,10 @@ def ejecutar() -> None:
         print("  [3] Consultar movimientos por período")
         print("  [4] Ver reportes")
         print("  [5] Ver alertas de stock bajo")
-        print("  [6] Salir")
-        opcion = _pedir_opcion({"1", "2", "3", "4", "5", "6"})
+        print("  [6] Clasificación ABC-XYZ")
+        print("  [7] Predicción de demanda")
+        print("  [8] Salir")
+        opcion = _pedir_opcion({"1", "2", "3", "4", "5", "6", "7", "8"})
 
         try:
             if opcion == "1":
@@ -456,6 +551,10 @@ def ejecutar() -> None:
             elif opcion == "5":
                 _ver_alertas()
             elif opcion == "6":
+                _ver_clasificacion_abc_xyz()
+            elif opcion == "7":
+                _ver_prediccion_demanda()
+            elif opcion == "8":
                 print("\n  Hasta luego.\n")
                 break
         except FerroAnalyticsError as e:
