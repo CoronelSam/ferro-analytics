@@ -1,0 +1,15 @@
+# FerroAnalytics – dependencias de Python
+# La Fase I (src/ modelos, importador, almacenamiento, reportes, menu) solo usa
+# la biblioteca estándar. Estas dependencias son para la Fase II.
+
+# Análisis y predicción (Fase II)
+pandas>=3.0
+numpy>=2.5
+scikit-learn>=1.9
+matplotlib>=3.11
+
+# Notebooks de pruebas
+ipykernel>=7.3
+
+# API del dashboard
+-r requirements-api.txt

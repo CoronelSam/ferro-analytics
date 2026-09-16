@@ -22,7 +22,9 @@ from src.modelos import (
 # Rutas por defecto
 # ──────────────────────────────────────────────
 
-DIRECTORIO_BINARIOS = os.path.join("data", "binarios")
+# La variable de entorno FERRO_BINARIOS permite trabajar con otro conjunto
+# de datos (p. ej. data/binarios_historico) sin tocar los de la Fase I.
+DIRECTORIO_BINARIOS = os.environ.get("FERRO_BINARIOS", os.path.join("data", "binarios"))
 
 RUTA_PRODUCTOS     = os.path.join(DIRECTORIO_BINARIOS, "productos.dat")
 RUTA_CATEGORIAS    = os.path.join(DIRECTORIO_BINARIOS, "categorias.dat")
