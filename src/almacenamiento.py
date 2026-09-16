@@ -156,41 +156,68 @@ def leer_productos(ruta: str = RUTA_PRODUCTOS) -> list:
 
 def guardar_productos(nuevos: list, ruta: str = RUTA_PRODUCTOS) -> dict:
     """
-    Aplica upsert de productos sobre el archivo binario.
+    Aplica upsert de productos sobre el archivo binario, usando productos.idx
+    para ubicar los códigos existentes y actualizarlos con `seek` en vez de
+    reescribir el archivo completo.
 
     Regla de negocio:
         - Si el código ya existe → actualiza stock_actual y
           fecha_ultima_actualizacion.
-        - Si no existe → inserta como nuevo registro.
+        - Si no existe → inserta como nuevo registro al final.
 
     Recibe:
         nuevos: lista de ProductoAnalitico provenientes del importador.
 
     Devuelve dict con claves 'insertados' y 'actualizados'.
     """
-    existentes = {p.codigo: p for p in leer_productos(ruta)}
+    from src import indices as idx
+
+    posiciones = dict(idx.obtener_indice_productos_sincronizado(ruta))
+    cambios_indice = {}
     insertados = 0
     actualizados = 0
 
-    for nuevo in nuevos:
-        if nuevo.codigo in existentes:
-            existentes[nuevo.codigo].stock_actual = nuevo.stock_actual
-            existentes[nuevo.codigo].fecha_ultima_actualizacion = nuevo.fecha_ultima_actualizacion
-            actualizados += 1
-        else:
-            existentes[nuevo.codigo] = nuevo
-            insertados += 1
+    _asegurar_directorio(ruta)
+    if not os.path.exists(ruta):
+        open(ruta, "wb").close()
 
-    _escribir_registros(ruta, list(existentes.values()), lambda p: p.a_bytes())
+    try:
+        with open(ruta, "r+b") as f:
+            for nuevo in nuevos:
+                pos = posiciones.get(nuevo.codigo)
+                if pos is not None:
+                    f.seek(pos)
+                    existente = ProductoAnalitico.desde_bytes(f.read(TAMANO_PRODUCTO))
+                    existente.stock_actual = nuevo.stock_actual
+                    existente.fecha_ultima_actualizacion = nuevo.fecha_ultima_actualizacion
+                    f.seek(pos)
+                    f.write(existente.a_bytes())
+                    actualizados += 1
+                else:
+                    f.seek(0, os.SEEK_END)
+                    pos = f.tell()
+                    f.write(nuevo.a_bytes())
+                    posiciones[nuevo.codigo] = pos
+                    cambios_indice[nuevo.codigo] = pos
+                    insertados += 1
+    except OSError as e:
+        raise ErrorAlmacenamiento(f"No se pudo escribir '{ruta}': {e}") from e
+
+    if cambios_indice:
+        idx.actualizar_indice_productos(cambios_indice, ruta)
+
     return {"insertados": insertados, "actualizados": actualizados}
 
 
 def obtener_codigos_productos(ruta: str = RUTA_PRODUCTOS) -> set:
     """
-    Devuelve el conjunto de códigos de producto almacenados.
+    Devuelve el conjunto de códigos de producto almacenados, leyendo
+    productos.idx en vez de todo productos.dat.
     Usado por importar_movimientos para validar referencias.
     """
-    return {p.codigo for p in leer_productos(ruta)}
+    from src import indices as idx
+
+    return {codigo for codigo, _ in idx.obtener_indice_productos_sincronizado(ruta)}
 
 
 # ──────────────────────────────────────────────
@@ -208,7 +235,9 @@ def leer_movimientos(ruta: str = RUTA_MOVIMIENTOS) -> list:
 
 def guardar_movimientos(nuevos: list, ruta: str = RUTA_MOVIMIENTOS) -> int:
     """
-    Agrega movimientos al archivo binario (sin sobreescribir los existentes).
+    Agrega movimientos al archivo binario (sin sobreescribir los existentes)
+    y actualiza movimientos.idx y movimientos_fecha.idx con las posiciones
+    de los nuevos registros.
     Los duplicados deben filtrarse antes con importar_movimientos.
 
     Recibe:
@@ -216,16 +245,41 @@ def guardar_movimientos(nuevos: list, ruta: str = RUTA_MOVIMIENTOS) -> int:
 
     Devuelve la cantidad de registros escritos.
     """
+    from src import indices as idx
+
+    if not nuevos:
+        return 0
+
+    # Sincroniza los índices con el estado actual del .dat antes de agregar,
+    # por si no existían todavía o quedaron desactualizados.
+    idx.obtener_indice_movimientos_sincronizado(ruta)
+    idx.obtener_indice_movimientos_fecha_sincronizado(ruta)
+
+    posicion = os.path.getsize(ruta) if os.path.exists(ruta) else 0
     _agregar_registros(ruta, nuevos, lambda m: m.a_bytes())
+
+    nuevas_por_id = []
+    nuevas_por_fecha = []
+    for m in nuevos:
+        nuevas_por_id.append((m.id_movimiento, posicion))
+        nuevas_por_fecha.append((m.fecha, posicion))
+        posicion += TAMANO_MOVIMIENTO
+
+    idx.agregar_indice_movimientos(nuevas_por_id, ruta)
+    idx.agregar_indice_movimientos_fecha(nuevas_por_fecha, ruta)
+
     return len(nuevos)
 
 
 def obtener_ids_movimientos(ruta: str = RUTA_MOVIMIENTOS) -> set:
     """
-    Devuelve el conjunto de id_movimiento almacenados.
+    Devuelve el conjunto de id_movimiento almacenados, leyendo
+    movimientos.idx en vez de todo movimientos.dat.
     Usado por importar_movimientos para detectar duplicados.
     """
-    return {m.id_movimiento for m in leer_movimientos(ruta)}
+    from src import indices as idx
+
+    return {id_mov for id_mov, _ in idx.obtener_indice_movimientos_sincronizado(ruta)}
 
 
 # ──────────────────────────────────────────────
