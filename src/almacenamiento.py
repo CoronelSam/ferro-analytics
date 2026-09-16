@@ -224,6 +224,11 @@ def _leer_nombres_importados(ruta: str) -> list:
     return nombres
 
 
+def leer_importaciones(ruta: str = RUTA_IMPORTACIONES) -> list:
+    """Devuelve los nombres de los archivos CSV ya importados, en orden de importación."""
+    return _leer_nombres_importados(ruta)
+
+
 def archivo_ya_importado(nombre_archivo: str, ruta: str = RUTA_IMPORTACIONES) -> bool:
     """
     Indica si el archivo CSV ya fue importado en una sesión anterior.
