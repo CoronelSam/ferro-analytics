@@ -5,7 +5,7 @@ Módulo de analítica de inventario para una ferretería. No reemplaza el sistem
 | Fase | Estado | Contenido |
 |---|---|---|
 | I | Completada | Importación de CSV, almacenamiento binario, consultas, reportes, menú de consola, pruebas en notebook |
-| II | En curso | API y dashboard web, excepciones, índices binarios, clasificación ABC-XYZ, predicción de demanda |
+| II | Completada | Excepciones propias y logging, índices binarios, clasificación ABC-XYZ, predicción de demanda, API y dashboard web |
 
 ## Requisitos
 
@@ -45,7 +45,9 @@ python main.py
   [3] Consultar movimientos por período
   [4] Ver reportes
   [5] Ver alertas de stock bajo
-  [6] Salir
+  [6] Clasificación ABC-XYZ
+  [7] Predicción de demanda
+  [8] Salir
 ```
 
 Para cargar los datos de ejemplo, usa la opción 1 e importa en este orden (los movimientos necesitan que los productos ya existan):
@@ -54,7 +56,7 @@ Para cargar los datos de ejemplo, usa la opción 1 e importa en este orden (los 
 2. `data/entrada/productos.csv`
 3. `data/entrada/movimientos.csv`
 
-Los reportes (opción 4) son: stock total por categoría, top de productos con stock inmovilizado y ventas mensuales por categoría. Los reportes y las alertas de stock bajo (opción 5) pueden exportarse a CSV en `data/reportes/`.
+Los reportes (opción 4) son: stock total por categoría, top de productos con stock inmovilizado y ventas mensuales por categoría. Los reportes y las alertas de stock bajo (opción 5) pueden exportarse a CSV en `data/reportes/`. Las opciones 6 y 7 son de la Fase II (ver [Analítica](#analítica-fase-ii) más abajo) y necesitan más historial que los datos de ejemplo: usa el histórico sintético.
 
 ### Datos históricos (Fase II)
 
@@ -72,6 +74,17 @@ Para que el menú o la API usen ese conjunto en lugar de `data/binarios`, define
 FERRO_BINARIOS=data/binarios_historico python main.py
 ```
 
+### Analítica (Fase II)
+
+Además de los reportes descriptivos de la Fase I, `src/clasificacion.py` y `src/prediccion.py` agregan:
+
+- **Clasificación ABC-XYZ**: ABC por valor de consumo (unidades vendidas × precio actual, cortes en 80%/95% acumulado) y XYZ por el coeficiente de variación de la demanda mensual, combinados en una matriz de 9 celdas con una recomendación de manejo para cada una.
+- **Predicción de demanda**: series mensuales por categoría o por producto (solo los de clase A/X: alto valor y demanda estable), comparando cuatro modelos por *backtesting* (MAE/MAPE) — ingenuo, media móvil, suavizado exponencial y una regresión con tendencia + estacionalidad — y el punto de reorden / stock de seguridad de un producto según su demanda diaria observada.
+
+Ambas necesitan más historial del que trae `data/entrada/` (ver [Datos históricos](#datos-históricos-fase-ii) arriba); con la muestra de la Fase I, predecir por producto normalmente lanza un error de datos insuficientes en vez de dar un resultado poco confiable. El detalle de las fórmulas y los mínimos de datos exigidos está en [`docs/analitica.md`](docs/analitica.md).
+
+Disponibles en el menú de consola (opciones 6 y 7), en el dashboard (pestaña **Analítica**) y por API en `/api/analitica/*`.
+
 ### API y dashboard web
 
 En una terminal, la API (puerto 8000):
@@ -86,11 +99,14 @@ En otra, el dashboard (puerto 5173, redirige `/api` a la API):
 pnpm --dir web run dev
 ```
 
-La documentación interactiva de la API queda en http://127.0.0.1:8000/docs.
+La documentación interactiva de la API queda en http://127.0.0.1:8000/docs. Los errores propios de FerroAnalytics (CSV inválido, binario corrupto, datos insuficientes para predecir) responden con el código HTTP correspondiente y `{"detail": "..."}`, y además quedan registrados en `data/logs/ferroanalytics.log`.
 
-### Notebook de pruebas
+### Notebooks de pruebas
 
-`notebooks/pruebas_fase1.ipynb` documenta y ejecuta las pruebas de la Fase I: importación, consistencia del stock, no duplicación al reimportar y correctitud de los reportes. Ábrelo en VS Code o Jupyter con el kernel del `.venv`.
+- `notebooks/pruebas_fase1.ipynb`: importación, consistencia del stock, no duplicación al reimportar y correctitud de los reportes (Fase I).
+- `notebooks/pruebas_fase2.ipynb`: jerarquía de excepciones y logging, índices binarios (búsqueda, upsert con `seek`, reconstrucción), clasificación ABC-XYZ y predicción de demanda, sobre el histórico sintético.
+
+Ábrelos en VS Code o Jupyter con el kernel del `.venv`.
 
 ## Formato de los CSV de entrada
 
@@ -142,15 +158,34 @@ Registros de longitud fija empaquetados con `struct` (little-endian), en `data/b
 
 Los binarios no se versionan: se regeneran importando los CSV.
 
+### Índices binarios (Fase II)
+
+`src/indices.py` mantiene, junto a cada `.dat`, un índice ordenado que mapea clave → posición:
+
+| Archivo | Clave → posición | Formato |
+|---|---|---|
+| `productos.idx` | código → offset en `productos.dat` | `<10si` |
+| `movimientos.idx` | id_movimiento → offset en `movimientos.dat` | `<ii` |
+| `movimientos_fecha.idx` | fecha → offset en `movimientos.dat` (clave repetible) | `<10si` |
+
+Permiten ubicar un registro con búsqueda binaria (sin leer todo el `.dat`) y, en `guardar_productos`, actualizar un producto existente con `seek` en vez de reescribir el archivo completo. Si un `.idx` falta, está corrupto o desincronizado con su `.dat`, se reconstruye solo; también puede forzarse con `src.indices.reconstruir_indices()`.
+
+## Excepciones y logging (Fase II)
+
+`src/excepciones.py` define `FerroAnalyticsError` como base de `ErrorImportacion`, `ErrorAlmacenamiento` (con `ArchivoCorrupto`) y `ErrorPrediccion` (con `DatosInsuficientes`). Se usan en vez de `ValueError`/`OSError` genéricos para que el menú y la API puedan mostrar un mensaje claro; cada una se registra automáticamente en `data/logs/ferroanalytics.log` al crearse.
+
 ## Estructura
 
 ```
 data/entrada/            CSV de ejemplo (Fase I)
 data/entrada/historico/  CSV sintéticos de 24 meses (Fase II)
-src/                     Lógica: modelos, importador, almacenamiento, reportes, menú
-api/                     API FastAPI para el dashboard
-web/                     Dashboard React + Vite
+data/logs/               Log de errores (Fase II, no versionado)
+docs/                    Documentación de la Fase II (metodología de analítica)
+src/                     modelos, importador, almacenamiento, reportes, menú (Fase I)
+                         excepciones, indices, clasificacion, prediccion (Fase II)
+api/                     API FastAPI para el dashboard, incluye /api/analitica/*
+web/                     Dashboard React + Vite, incluye la pestaña Analítica
 scripts/                 Generador de datos históricos
-notebooks/               Pruebas y documentación en Jupyter
+notebooks/               Pruebas y documentación en Jupyter (Fase I y Fase II)
 main.py                  Punto de entrada de la consola
 ```
