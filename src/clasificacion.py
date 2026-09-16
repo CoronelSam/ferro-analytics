@@ -55,7 +55,7 @@ def fecha_referencia(movimientos: list) -> date | None:
     return max(fechas) if fechas else None
 
 
-def _meses_periodo(movimientos: list) -> list:
+def meses_periodo(movimientos: list) -> list:
     """
     Lista ordenada de todos los pares (año, mes) entre el primer y el
     último movimiento registrado, sin huecos.
@@ -172,7 +172,7 @@ def demanda_mensual_por_producto(movimientos: list, meses: list | None = None) -
     Devuelve dict {codigo: {(anio, mes): unidades, ...}}.
     """
     if meses is None:
-        meses = _meses_periodo(movimientos)
+        meses = meses_periodo(movimientos)
 
     series: dict = {}
     for m in movimientos:
@@ -227,7 +227,7 @@ def clasificar_xyz(productos: list, movimientos: list) -> list:
     if not productos:
         raise DatosInsuficientes("No hay productos para clasificar.")
 
-    meses = _meses_periodo(movimientos)
+    meses = meses_periodo(movimientos)
     if not meses:
         raise DatosInsuficientes(
             "No hay movimientos suficientes para construir una serie mensual de demanda."
