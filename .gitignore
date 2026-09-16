@@ -3,6 +3,7 @@
 data/binarios/
 data/binarios_*/
 data/reportes/
+data/logs/
 
 # ── Python ───────────────────────────────────────────────
 __pycache__/

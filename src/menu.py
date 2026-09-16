@@ -11,6 +11,7 @@ from datetime import datetime
 import src.almacenamiento as alm
 import src.importador as imp
 import src.reportes as rep
+from src.excepciones import ErrorAlmacenamiento, ErrorImportacion, FerroAnalyticsError
 
 DIRECTORIO_REPORTES = os.path.join("data", "reportes")
 
@@ -139,8 +140,10 @@ def _importar_csv() -> None:
             _importar_productos(ruta, nombre_archivo)
         else:
             _importar_movimientos(ruta, nombre_archivo)
-    except (ValueError, OSError) as e:
-        print(f"\n  Error al leer el archivo: {e}")
+    except ErrorImportacion as e:
+        print(f"\n  Error al importar el archivo: {e}")
+    except ErrorAlmacenamiento as e:
+        print(f"\n  Error al guardar los datos: {e}")
 
     _pausar()
 
@@ -441,16 +444,20 @@ def ejecutar() -> None:
         print("  [6] Salir")
         opcion = _pedir_opcion({"1", "2", "3", "4", "5", "6"})
 
-        if opcion == "1":
-            _importar_csv()
-        elif opcion == "2":
-            _consultar_inventario()
-        elif opcion == "3":
-            _consultar_movimientos()
-        elif opcion == "4":
-            _ver_reportes()
-        elif opcion == "5":
-            _ver_alertas()
-        elif opcion == "6":
-            print("\n  Hasta luego.\n")
-            break
+        try:
+            if opcion == "1":
+                _importar_csv()
+            elif opcion == "2":
+                _consultar_inventario()
+            elif opcion == "3":
+                _consultar_movimientos()
+            elif opcion == "4":
+                _ver_reportes()
+            elif opcion == "5":
+                _ver_alertas()
+            elif opcion == "6":
+                print("\n  Hasta luego.\n")
+                break
+        except FerroAnalyticsError as e:
+            print(f"\n  Error: {e}")
+            _pausar()

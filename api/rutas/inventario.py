@@ -94,8 +94,6 @@ async def importar_csv(entidad: str, archivo: UploadFile):
             resultado = {"insertados": None, "actualizados": None}
             if aceptadas:
                 alm.guardar_movimientos(aceptadas)
-    except (ValueError, OSError) as e:
-        raise HTTPException(400, f"Error al leer el archivo: {e}")
     finally:
         os.unlink(ruta_temporal)
 

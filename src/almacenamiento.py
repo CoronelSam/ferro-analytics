@@ -7,6 +7,7 @@ Toda la lógica de upsert y deduplicación vive aquí.
 import os
 import struct
 
+from src.excepciones import ArchivoCorrupto, ErrorAlmacenamiento
 from src.modelos import (
     CategoriaAnalitica,
     MovimientoAnalitico,
@@ -53,16 +54,30 @@ def _leer_registros(ruta: str, tamano: int, deserializar) -> list:
         deserializar: callable que convierte bytes → objeto del modelo.
 
     Devuelve lista de objetos (vacía si el archivo no existe).
+
+    Lanza ArchivoCorrupto si el tamaño del archivo no es múltiplo del
+    tamaño de registro, o si algún bloque no se puede deserializar.
     """
     if not os.path.exists(ruta):
         return []
+
+    tamano_archivo = os.path.getsize(ruta)
+    if tamano_archivo % tamano != 0:
+        raise ArchivoCorrupto(
+            f"'{ruta}' tiene un tamaño ({tamano_archivo} bytes) que no es "
+            f"múltiplo del registro ({tamano} bytes); el archivo puede estar truncado."
+        )
+
     registros = []
-    with open(ruta, "rb") as f:
-        while True:
-            bloque = f.read(tamano)
-            if len(bloque) < tamano:
-                break
-            registros.append(deserializar(bloque))
+    try:
+        with open(ruta, "rb") as f:
+            while True:
+                bloque = f.read(tamano)
+                if not bloque:
+                    break
+                registros.append(deserializar(bloque))
+    except (OSError, struct.error) as e:
+        raise ArchivoCorrupto(f"No se pudo leer '{ruta}': {e}") from e
     return registros
 
 
@@ -76,9 +91,12 @@ def _escribir_registros(ruta: str, objetos: list, serializar) -> None:
         serializar: callable que convierte objeto → bytes.
     """
     _asegurar_directorio(ruta)
-    with open(ruta, "wb") as f:
-        for obj in objetos:
-            f.write(serializar(obj))
+    try:
+        with open(ruta, "wb") as f:
+            for obj in objetos:
+                f.write(serializar(obj))
+    except OSError as e:
+        raise ErrorAlmacenamiento(f"No se pudo escribir '{ruta}': {e}") from e
 
 
 def _agregar_registros(ruta: str, objetos: list, serializar) -> None:
@@ -91,9 +109,12 @@ def _agregar_registros(ruta: str, objetos: list, serializar) -> None:
         serializar: callable que convierte objeto → bytes.
     """
     _asegurar_directorio(ruta)
-    with open(ruta, "ab") as f:
-        for obj in objetos:
-            f.write(serializar(obj))
+    try:
+        with open(ruta, "ab") as f:
+            for obj in objetos:
+                f.write(serializar(obj))
+    except OSError as e:
+        raise ErrorAlmacenamiento(f"No se pudo escribir '{ruta}': {e}") from e
 
 
 # ──────────────────────────────────────────────
@@ -212,17 +233,33 @@ def obtener_ids_movimientos(ruta: str = RUTA_MOVIMIENTOS) -> set:
 # ──────────────────────────────────────────────
 
 def _leer_nombres_importados(ruta: str) -> list:
-    """Lee todos los nombres de archivos registrados en importaciones.dat."""
+    """
+    Lee todos los nombres de archivos registrados en importaciones.dat.
+
+    Lanza ArchivoCorrupto si el tamaño del archivo no es múltiplo del
+    tamaño de registro.
+    """
     if not os.path.exists(ruta):
         return []
+
+    tamano_archivo = os.path.getsize(ruta)
+    if tamano_archivo % TAMANO_IMPORTACION != 0:
+        raise ArchivoCorrupto(
+            f"'{ruta}' tiene un tamaño ({tamano_archivo} bytes) que no es "
+            f"múltiplo del registro ({TAMANO_IMPORTACION} bytes); el archivo puede estar truncado."
+        )
+
     nombres = []
-    with open(ruta, "rb") as f:
-        while True:
-            bloque = f.read(TAMANO_IMPORTACION)
-            if len(bloque) < TAMANO_IMPORTACION:
-                break
-            nombre = struct.unpack(FORMATO_IMPORTACION, bloque)[0]
-            nombres.append(nombre.decode("utf-8").rstrip("\x00").strip())
+    try:
+        with open(ruta, "rb") as f:
+            while True:
+                bloque = f.read(TAMANO_IMPORTACION)
+                if not bloque:
+                    break
+                nombre = struct.unpack(FORMATO_IMPORTACION, bloque)[0]
+                nombres.append(nombre.decode("utf-8").rstrip("\x00").strip())
+    except (OSError, struct.error) as e:
+        raise ArchivoCorrupto(f"No se pudo leer '{ruta}': {e}") from e
     return nombres
 
 
@@ -252,5 +289,8 @@ def registrar_importacion(nombre_archivo: str, ruta: str = RUTA_IMPORTACIONES) -
     """
     _asegurar_directorio(ruta)
     nombre_bytes = nombre_archivo.encode("utf-8").ljust(60)[:60]
-    with open(ruta, "ab") as f:
-        f.write(struct.pack(FORMATO_IMPORTACION, nombre_bytes))
+    try:
+        with open(ruta, "ab") as f:
+            f.write(struct.pack(FORMATO_IMPORTACION, nombre_bytes))
+    except OSError as e:
+        raise ErrorAlmacenamiento(f"No se pudo registrar la importación en '{ruta}': {e}") from e

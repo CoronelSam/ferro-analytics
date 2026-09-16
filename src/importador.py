@@ -8,6 +8,7 @@ import csv
 from datetime import date, datetime
 from typing import Tuple
 
+from src.excepciones import ErrorImportacion
 from src.modelos import CategoriaAnalitica, MovimientoAnalitico, ProductoAnalitico
 
 
@@ -78,19 +79,22 @@ def importar_categorias(
     rechazadas: list[dict] = []
     columnas_requeridas = {"id", "nombre"}
 
-    with open(ruta_csv, newline="", encoding="utf-8") as f:
-        lector = csv.DictReader(f)
-        _verificar_columnas(lector.fieldnames, columnas_requeridas, ruta_csv)
+    try:
+        with open(ruta_csv, newline="", encoding="utf-8") as f:
+            lector = csv.DictReader(f)
+            _verificar_columnas(lector.fieldnames, columnas_requeridas, ruta_csv)
 
-        for num, fila in enumerate(lector, start=2):
-            try:
-                id_cat = _validar_entero_no_negativo(fila["id"], "id")
-                nombre = fila["nombre"].strip()
-                if not nombre:
-                    raise ValueError("'nombre' no puede estar vacío")
-                aceptadas.append(CategoriaAnalitica(id=id_cat, nombre=nombre))
-            except (ValueError, KeyError) as e:
-                rechazadas.append(_fila_rechazada(num, dict(fila), str(e)))
+            for num, fila in enumerate(lector, start=2):
+                try:
+                    id_cat = _validar_entero_no_negativo(fila["id"], "id")
+                    nombre = fila["nombre"].strip()
+                    if not nombre:
+                        raise ValueError("'nombre' no puede estar vacío")
+                    aceptadas.append(CategoriaAnalitica(id=id_cat, nombre=nombre))
+                except (ValueError, KeyError) as e:
+                    rechazadas.append(_fila_rechazada(num, dict(fila), str(e)))
+    except (OSError, UnicodeDecodeError, csv.Error) as e:
+        raise ErrorImportacion(f"No se pudo leer '{ruta_csv}': {e}") from e
 
     return aceptadas, rechazadas
 
@@ -119,38 +123,41 @@ def importar_productos(
     }
     hoy = date.today().isoformat()
 
-    with open(ruta_csv, newline="", encoding="utf-8") as f:
-        lector = csv.DictReader(f)
-        _verificar_columnas(lector.fieldnames, columnas_requeridas, ruta_csv)
+    try:
+        with open(ruta_csv, newline="", encoding="utf-8") as f:
+            lector = csv.DictReader(f)
+            _verificar_columnas(lector.fieldnames, columnas_requeridas, ruta_csv)
 
-        for num, fila in enumerate(lector, start=2):
-            try:
-                codigo = fila["codigo"].strip()
-                if not codigo:
-                    raise ValueError("'codigo' no puede estar vacío")
-                if len(codigo) > 10:
-                    raise ValueError(f"'codigo' excede 10 caracteres: '{codigo}'")
+            for num, fila in enumerate(lector, start=2):
+                try:
+                    codigo = fila["codigo"].strip()
+                    if not codigo:
+                        raise ValueError("'codigo' no puede estar vacío")
+                    if len(codigo) > 10:
+                        raise ValueError(f"'codigo' excede 10 caracteres: '{codigo}'")
 
-                nombre = fila["nombre"].strip()
-                if not nombre:
-                    raise ValueError("'nombre' no puede estar vacío")
+                    nombre = fila["nombre"].strip()
+                    if not nombre:
+                        raise ValueError("'nombre' no puede estar vacío")
 
-                id_categoria = _validar_entero_no_negativo(fila["id_categoria"], "id_categoria")
-                precio_unitario = _validar_float_no_negativo(fila["precio_unitario"], "precio_unitario")
-                stock_actual = _validar_entero_no_negativo(fila["stock_actual"], "stock_actual")
-                stock_minimo = _validar_entero_no_negativo(fila["stock_minimo"], "stock_minimo")
+                    id_categoria = _validar_entero_no_negativo(fila["id_categoria"], "id_categoria")
+                    precio_unitario = _validar_float_no_negativo(fila["precio_unitario"], "precio_unitario")
+                    stock_actual = _validar_entero_no_negativo(fila["stock_actual"], "stock_actual")
+                    stock_minimo = _validar_entero_no_negativo(fila["stock_minimo"], "stock_minimo")
 
-                aceptados.append(ProductoAnalitico(
-                    codigo=codigo,
-                    nombre=nombre,
-                    id_categoria=id_categoria,
-                    precio_unitario=precio_unitario,
-                    stock_actual=stock_actual,
-                    stock_minimo=stock_minimo,
-                    fecha_ultima_actualizacion=hoy,
-                ))
-            except (ValueError, KeyError) as e:
-                rechazados.append(_fila_rechazada(num, dict(fila), str(e)))
+                    aceptados.append(ProductoAnalitico(
+                        codigo=codigo,
+                        nombre=nombre,
+                        id_categoria=id_categoria,
+                        precio_unitario=precio_unitario,
+                        stock_actual=stock_actual,
+                        stock_minimo=stock_minimo,
+                        fecha_ultima_actualizacion=hoy,
+                    ))
+                except (ValueError, KeyError) as e:
+                    rechazados.append(_fila_rechazada(num, dict(fila), str(e)))
+    except (OSError, UnicodeDecodeError, csv.Error) as e:
+        raise ErrorImportacion(f"No se pudo leer '{ruta_csv}': {e}") from e
 
     return aceptados, rechazados
 
@@ -184,40 +191,43 @@ def importar_movimientos(
         "id_movimiento", "codigo_producto", "tipo", "cantidad", "fecha",
     }
 
-    with open(ruta_csv, newline="", encoding="utf-8") as f:
-        lector = csv.DictReader(f)
-        _verificar_columnas(lector.fieldnames, columnas_requeridas, ruta_csv)
+    try:
+        with open(ruta_csv, newline="", encoding="utf-8") as f:
+            lector = csv.DictReader(f)
+            _verificar_columnas(lector.fieldnames, columnas_requeridas, ruta_csv)
 
-        for num, fila in enumerate(lector, start=2):
-            try:
-                id_mov = _validar_entero_no_negativo(fila["id_movimiento"], "id_movimiento")
-                if id_mov in ids_existentes:
-                    raise ValueError(f"id_movimiento duplicado: {id_mov}")
+            for num, fila in enumerate(lector, start=2):
+                try:
+                    id_mov = _validar_entero_no_negativo(fila["id_movimiento"], "id_movimiento")
+                    if id_mov in ids_existentes:
+                        raise ValueError(f"id_movimiento duplicado: {id_mov}")
 
-                codigo = fila["codigo_producto"].strip()
-                if not codigo:
-                    raise ValueError("'codigo_producto' no puede estar vacío")
-                if codigo not in codigos_validos:
-                    raise ValueError(f"codigo_producto '{codigo}' no existe en el inventario")
+                    codigo = fila["codigo_producto"].strip()
+                    if not codigo:
+                        raise ValueError("'codigo_producto' no puede estar vacío")
+                    if codigo not in codigos_validos:
+                        raise ValueError(f"codigo_producto '{codigo}' no existe en el inventario")
 
-                tipo = fila["tipo"].strip().upper()
-                if tipo not in MovimientoAnalitico.TIPOS_VALIDOS:
-                    raise ValueError(f"'tipo' debe ser E o S, recibido: '{tipo}'")
+                    tipo = fila["tipo"].strip().upper()
+                    if tipo not in MovimientoAnalitico.TIPOS_VALIDOS:
+                        raise ValueError(f"'tipo' debe ser E o S, recibido: '{tipo}'")
 
-                cantidad = _validar_entero_no_negativo(fila["cantidad"], "cantidad")
-                _parsear_fecha(fila["fecha"])   # valida formato y que no sea futura
-                fecha = fila["fecha"].strip()
+                    cantidad = _validar_entero_no_negativo(fila["cantidad"], "cantidad")
+                    _parsear_fecha(fila["fecha"])   # valida formato y que no sea futura
+                    fecha = fila["fecha"].strip()
 
-                ids_existentes.add(id_mov)
-                aceptados.append(MovimientoAnalitico(
-                    id_movimiento=id_mov,
-                    codigo_producto=codigo,
-                    tipo=tipo,
-                    cantidad=cantidad,
-                    fecha=fecha,
-                ))
-            except (ValueError, KeyError) as e:
-                rechazados.append(_fila_rechazada(num, dict(fila), str(e)))
+                    ids_existentes.add(id_mov)
+                    aceptados.append(MovimientoAnalitico(
+                        id_movimiento=id_mov,
+                        codigo_producto=codigo,
+                        tipo=tipo,
+                        cantidad=cantidad,
+                        fecha=fecha,
+                    ))
+                except (ValueError, KeyError) as e:
+                    rechazados.append(_fila_rechazada(num, dict(fila), str(e)))
+    except (OSError, UnicodeDecodeError, csv.Error) as e:
+        raise ErrorImportacion(f"No se pudo leer '{ruta_csv}': {e}") from e
 
     return aceptados, rechazados
 
@@ -231,10 +241,10 @@ def _verificar_columnas(
     requeridas: set,
     ruta: str,
 ) -> None:
-    """Lanza ValueError si faltan columnas obligatorias en el CSV."""
+    """Lanza ErrorImportacion si faltan columnas obligatorias en el CSV."""
     presentes = set(fieldnames or [])
     faltantes = requeridas - presentes
     if faltantes:
-        raise ValueError(
+        raise ErrorImportacion(
             f"El archivo '{ruta}' no tiene las columnas requeridas: {sorted(faltantes)}"
         )
