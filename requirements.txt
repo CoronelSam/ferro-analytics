@@ -8,9 +8,10 @@ numpy>=2.5
 scikit-learn>=1.9
 matplotlib>=3.11
 
-# Importación desde Postgres (Fase II)
+# Importación desde Postgres o MySQL (Fase II)
 sqlalchemy>=2.0
 psycopg[binary]>=3.2
+pymysql>=1.1
 
 # Notebooks de pruebas
 ipykernel>=7.3

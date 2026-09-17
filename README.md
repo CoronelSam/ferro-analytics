@@ -20,7 +20,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-La Fase I (menú de consola) solo usa la biblioteca estándar; `requirements.txt` agrega pandas, numpy, scikit-learn, matplotlib, SQLAlchemy + psycopg y FastAPI para la Fase II.
+La Fase I (menú de consola) solo usa la biblioteca estándar; `requirements.txt` agrega pandas, numpy, scikit-learn, matplotlib, SQLAlchemy + psycopg/PyMySQL y FastAPI para la Fase II.
 
 Para el dashboard:
 
@@ -47,7 +47,7 @@ python main.py
   [5] Ver alertas de stock bajo
   [6] Clasificación ABC-XYZ
   [7] Predicción de demanda
-  [8] Importar desde base de datos (Postgres)
+  [8] Importar desde base de datos (Postgres/MySQL)
   [9] Salir
 ```
 
@@ -57,7 +57,7 @@ Para cargar los datos de ejemplo, usa la opción 1 e importa en este orden (los 
 2. `data/entrada/productos.csv`
 3. `data/entrada/movimientos.csv`
 
-Los reportes (opción 4) son: stock total por categoría, top de productos con stock inmovilizado y ventas mensuales por categoría. Los reportes y las alertas de stock bajo (opción 5) pueden exportarse a CSV en `data/reportes/`. Las opciones 6 y 7 son de la Fase II (ver [Analítica](#analítica-fase-ii) más abajo) y necesitan más historial que los datos de ejemplo: usa el histórico sintético. La opción 8 importa directamente desde Postgres en vez de un CSV (ver [Base de datos](#importar-desde-una-base-de-datos-postgres) más abajo).
+Los reportes (opción 4) son: stock total por categoría, top de productos con stock inmovilizado y ventas mensuales por categoría. Los reportes y las alertas de stock bajo (opción 5) pueden exportarse a CSV en `data/reportes/`. Las opciones 6 y 7 son de la Fase II (ver [Analítica](#analítica-fase-ii) más abajo) y necesitan más historial que los datos de ejemplo: usa el histórico sintético. La opción 8 importa directamente desde Postgres o MySQL en vez de un CSV (ver [Base de datos](#importar-desde-una-base-de-datos-postgres-o-mysql) más abajo).
 
 ### Datos históricos (Fase II)
 
@@ -75,16 +75,16 @@ Para que el menú o la API usen ese conjunto en lugar de `data/binarios`, define
 FERRO_BINARIOS=data/binarios_historico python main.py
 ```
 
-### Importar desde una base de datos Postgres
+### Importar desde una base de datos Postgres o MySQL
 
-Además del CSV, `src/importador_bd.py` puede leer categorías, productos y movimientos directamente de una base de datos Postgres (vía SQLAlchemy + psycopg), con las mismas reglas de validación y las mismas funciones de `almacenamiento.py` para guardarlos. Se configura con una variable de entorno, nunca escribiendo la conexión en el menú:
+Además del CSV, `src/importador_bd.py` puede leer categorías, productos y movimientos directamente de una base de datos Postgres o MySQL (vía SQLAlchemy, con psycopg o PyMySQL según el motor), con las mismas reglas de validación y las mismas funciones de `almacenamiento.py` para guardarlos. Se configura con una variable de entorno, nunca escribiendo la conexión en el menú:
 
 ```bash
-export FERRO_BD_URL="postgresql+psycopg://usuario:clave@host:5432/basededatos"
+export FERRO_BD_URL="postgresql+psycopg://usuario:clave@host:5432/basededatos"   # o mysql+pymysql://...
 python main.py   # opción [8]
 ```
 
-Detalles del esquema esperado, cómo apuntar a otros nombres de tabla y cómo funciona la sincronización incremental de movimientos (para no releer toda la tabla en cada corrida) están en [`docs/base_de_datos.md`](docs/base_de_datos.md).
+Detalles del esquema esperado, cómo apuntar a otros nombres de tabla, la sincronización incremental de movimientos (para no releer toda la tabla en cada corrida) y un problema de codificación de MySQL que `crear_engine()` corrige solo, están en [`docs/base_de_datos.md`](docs/base_de_datos.md).
 
 ### Analítica (Fase II)
 

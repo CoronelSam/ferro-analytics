@@ -1,19 +1,30 @@
-# Importar desde una base de datos Postgres
+# Importar desde una base de datos (Postgres o MySQL)
 
-`src/importador_bd.py` es una alternativa a `src/importador.py` (CSV): en vez de leer un archivo, consulta directamente las tablas de categorías, productos y movimientos en una base de datos Postgres, valida cada fila con **las mismas reglas de negocio** que la versión CSV, y produce los mismos objetos del modelo (`CategoriaAnalitica`, `ProductoAnalitico`, `MovimientoAnalitico`) para guardarlos con las funciones ya existentes de `almacenamiento.py`. Todo lo que hay después de la importación (binarios, índices, clasificación, predicción, API, dashboard) no cambia.
+`src/importador_bd.py` es una alternativa a `src/importador.py` (CSV): en vez de leer un archivo, consulta directamente las tablas de categorías, productos y movimientos en una base de datos relacional, valida cada fila con **las mismas reglas de negocio** que la versión CSV, y produce los mismos objetos del modelo (`CategoriaAnalitica`, `ProductoAnalitico`, `MovimientoAnalitico`) para guardarlos con las funciones ya existentes de `almacenamiento.py`. Todo lo que hay después de la importación (binarios, índices, clasificación, predicción, API, dashboard) no cambia.
 
-Usa [SQLAlchemy](https://www.sqlalchemy.org) (Core, sin ORM) con el driver [psycopg 3](https://www.psycopg.org). Ambos están en `requirements.txt`.
+Usa [SQLAlchemy](https://www.sqlalchemy.org) (Core, sin ORM) con SQL estándar, así que **el mismo módulo sirve para Postgres y para MySQL**: lo único que cambia es el driver instalado y el prefijo de la cadena de conexión. Ambos drivers ([psycopg 3](https://www.psycopg.org) y [PyMySQL](https://pymysql.readthedocs.io)) están en `requirements.txt`.
 
 ## Configuración
 
 La conexión se toma de la variable de entorno `FERRO_BD_URL`:
 
 ```bash
+# Postgres
 export FERRO_BD_URL="postgresql+psycopg://usuario:clave@host:5432/basededatos"
+
+# MySQL
+export FERRO_BD_URL="mysql+pymysql://usuario:clave@host:3306/basededatos"
+
 python main.py
 ```
 
+`crear_engine()` detecta el motor por el prefijo de la URL (`engine.dialect.name`) y rechaza cualquier otro con `ErrorImportacion`; `nombre_motor(engine)` da un nombre legible ("PostgreSQL"/"MySQL") para mostrarlo, como hace el menú tras conectar.
+
 No hay una forma de introducir la cadena de conexión a mano en el menú a propósito, para no fomentar escribir credenciales en la terminal o dejarlas en el historial de comandos.
+
+### MySQL: forzar `utf8mb4`
+
+Un servidor de MySQL puede negociar `latin1` para la conexión aunque la base de datos esté creada como `utf8mb4` — es el comportamiento de fábrica en muchas instalaciones (`SHOW VARIABLES LIKE 'character_set%'` lo confirma). Sin forzar `utf8mb4` explícitamente, cualquier tilde o `ñ` se corrompe al leerla (se ve como `Ã±`, `Ã­`, etc.). Por eso `crear_engine()` agrega `?charset=utf8mb4` a la URL automáticamente cuando el motor es MySQL y la URL no trae ya un `charset` propio; Postgres no lo necesita, porque psycopg toma la codificación de la base de datos automáticamente. Si tu URL de MySQL ya especifica `charset=otro`, se respeta tal cual.
 
 ## Esquema esperado
 
@@ -43,11 +54,13 @@ CREATE TABLE movimientos (
 );
 ```
 
+Este DDL es válido tanto en Postgres como en MySQL sin cambios (`NUMERIC` es un alias de `DECIMAL` en MySQL).
+
 Si el sistema de inventario real usa otros nombres de tabla, cada función acepta un parámetro `tabla` (por ejemplo `importar_productos_desde_bd(engine, tabla="inventario_productos")`). Los nombres de columna, en cambio, sí deben coincidir con los de arriba.
 
 ## Uso
 
-Desde el menú de consola, opción **[8] Importar desde base de datos (Postgres)**: pide el tipo de dato (categorías, productos o movimientos), consulta la tabla correspondiente y aplica el mismo flujo de `guardar_categorias`/`guardar_productos`/`guardar_movimientos` que la importación por CSV.
+Desde el menú de consola, opción **[8] Importar desde base de datos (Postgres/MySQL)**: pide el tipo de dato (categorías, productos o movimientos), consulta la tabla correspondiente y aplica el mismo flujo de `guardar_categorias`/`guardar_productos`/`guardar_movimientos` que la importación por CSV.
 
 Programáticamente:
 

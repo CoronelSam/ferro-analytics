@@ -523,13 +523,14 @@ def _mostrar_pronostico(resultado: dict) -> None:
 
 
 # ──────────────────────────────────────────────
-# Opción 9: Importar desde base de datos (Postgres)
+# Opción 9: Importar desde base de datos (Postgres o MySQL)
 # ──────────────────────────────────────────────
 
 def _importar_desde_bd() -> None:
-    _titulo("IMPORTAR DESDE BASE DE DATOS (POSTGRES)")
+    _titulo("IMPORTAR DESDE BASE DE DATOS (POSTGRES O MYSQL)")
     print("  Requiere la variable de entorno FERRO_BD_URL, p. ej.:")
     print("    postgresql+psycopg://usuario:clave@host:5432/basededatos")
+    print("    mysql+pymysql://usuario:clave@host:3306/basededatos")
 
     try:
         engine = imp_bd.crear_engine()
@@ -538,7 +539,7 @@ def _importar_desde_bd() -> None:
         _pausar()
         return
 
-    print("\n  Conexión establecida.")
+    print(f"\n  Conexión establecida ({imp_bd.nombre_motor(engine)}).")
     print("  Tipo de datos:")
     print("  [1] Categorías")
     print("  [2] Productos")
@@ -590,7 +591,7 @@ def ejecutar() -> None:
         print("  [5] Ver alertas de stock bajo")
         print("  [6] Clasificación ABC-XYZ")
         print("  [7] Predicción de demanda")
-        print("  [8] Importar desde base de datos (Postgres)")
+        print("  [8] Importar desde base de datos (Postgres/MySQL)")
         print("  [9] Salir")
         opcion = _pedir_opcion({"1", "2", "3", "4", "5", "6", "7", "8", "9"})
 

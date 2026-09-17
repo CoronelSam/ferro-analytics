@@ -1,5 +1,6 @@
 """
-Importador desde una base de datos Postgres para FerroAnalytics (Fase II).
+Importador desde una base de datos relacional (Postgres o MySQL) para
+FerroAnalytics (Fase II).
 
 Alternativa a importador.py (CSV): lee las mismas tres tablas que el
 sistema de inventario podría exponer directamente en su base de datos,
@@ -7,11 +8,13 @@ valida cada fila con las mismas reglas de negocio y devuelve los mismos
 objetos del modelo, para que se guarden con las funciones ya existentes
 de almacenamiento.py (guardar_categorias, guardar_productos, guardar_movimientos).
 
-Requiere SQLAlchemy y un driver de Postgres (psycopg). La cadena de
-conexión se toma de la variable de entorno FERRO_BD_URL si no se pasa
-explícitamente, por ejemplo:
+Se apoya en SQLAlchemy Core (sin ORM) con SQL estándar (SELECT simples,
+parámetros nombrados), así que el mismo código sirve para ambos motores:
+solo cambia el driver instalado y la cadena de conexión, que se toma de
+la variable de entorno FERRO_BD_URL si no se pasa explícitamente:
 
-    postgresql+psycopg://usuario:clave@localhost:5432/inventario
+    postgresql+psycopg://usuario:clave@localhost:5432/inventario   (requiere psycopg)
+    mysql+pymysql://usuario:clave@localhost:3306/inventario        (requiere PyMySQL)
 """
 
 import os
@@ -19,7 +22,7 @@ import re
 from datetime import date, datetime
 from typing import Tuple
 
-from sqlalchemy import Engine, create_engine, text
+from sqlalchemy import Engine, create_engine, make_url, text
 
 from src.excepciones import ErrorImportacion
 from src.importador import (
@@ -31,33 +34,61 @@ from src.modelos import CategoriaAnalitica, MovimientoAnalitico, ProductoAnaliti
 
 _NOMBRE_TABLA_VALIDO = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
+_MOTORES_SOPORTADOS = {"postgresql": "PostgreSQL", "mysql": "MySQL"}
+
 
 def crear_engine(url: str | None = None) -> Engine:
     """
-    Crea el Engine de SQLAlchemy hacia Postgres y prueba la conexión.
+    Crea el Engine de SQLAlchemy (Postgres o MySQL, según la URL) y prueba
+    la conexión.
 
     Recibe:
         url: cadena de conexión SQLAlchemy; si es None, se toma de la
-             variable de entorno FERRO_BD_URL.
+             variable de entorno FERRO_BD_URL. El prefijo determina el
+             motor y el driver a usar: 'postgresql+psycopg://...' o
+             'mysql+pymysql://...'.
 
     Devuelve el Engine, listo para reutilizarse en varias importaciones.
 
-    Lanza ErrorImportacion si no hay URL disponible o la conexión falla.
+    Lanza ErrorImportacion si no hay URL disponible, el motor no es
+    Postgres ni MySQL, o la conexión falla.
     """
     url = url or os.environ.get("FERRO_BD_URL")
     if not url:
         raise ErrorImportacion(
             "No se definió la conexión a la base de datos: indique 'url' o "
-            "defina la variable de entorno FERRO_BD_URL "
-            "(p. ej. postgresql+psycopg://usuario:clave@host:5432/basededatos)."
+            "defina la variable de entorno FERRO_BD_URL, por ejemplo:\n"
+            "    postgresql+psycopg://usuario:clave@host:5432/basededatos\n"
+            "    mysql+pymysql://usuario:clave@host:3306/basededatos"
         )
+
+    url_obj = make_url(url)
+    # El servidor de MySQL puede negociar latin1 para la conexión aunque la
+    # base de datos sea utf8mb4 (es el valor de fábrica en muchas
+    # instalaciones); sin forzar utf8mb4 aquí, cualquier tilde o ñ se
+    # corrompe al leerla. Postgres no tiene este problema: psycopg toma la
+    # codificación de la base de datos automáticamente.
+    if url_obj.get_backend_name() == "mysql" and "charset" not in url_obj.query:
+        url_obj = url_obj.update_query_dict({"charset": "utf8mb4"})
+
     try:
-        engine = create_engine(url)
+        engine = create_engine(url_obj)
         with engine.connect():
             pass  # falla rápido aquí en vez de en la primera consulta
     except Exception as e:
         raise ErrorImportacion(f"No se pudo conectar a la base de datos: {e}") from e
+
+    if engine.dialect.name not in _MOTORES_SOPORTADOS:
+        raise ErrorImportacion(
+            f"Motor de base de datos no soportado: '{engine.dialect.name}' "
+            f"(solo Postgres y MySQL)."
+        )
     return engine
+
+
+def nombre_motor(engine: Engine) -> str:
+    """Nombre legible del motor de un Engine ya creado (p. ej. 'PostgreSQL')."""
+    return _MOTORES_SOPORTADOS.get(engine.dialect.name, engine.dialect.name)
 
 
 def _validar_nombre_tabla(tabla: str) -> str:
