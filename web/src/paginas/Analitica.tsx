@@ -173,12 +173,6 @@ function ClasificacionABCXYZ() {
                     <td className="px-4 py-3 text-right text-[13px] font-bold text-[#13233A]">
                       {formatearLempiras(r.valor_consumo)}
                     </td>
-<<<<<<< HEAD
-=======
-                    <td className="px-4 py-3 text-right text-[13px] font-semibold text-[#53647A]">
-                      {r.cv_demanda ?? '—'}
-                    </td>
->>>>>>> 4613cf8 ("feat(ui): renovar identidad visual de FerroAnalytics)
                     <td className="px-4 py-3">
                       <span className={`rounded-full border px-2.5 py-1 text-xs font-extrabold ${COLOR_ABC[r.clase_abc]}`}>
                         {ETIQUETA_ABC[r.clase_abc]} ({r.clase_abc})
@@ -430,19 +424,11 @@ function PrediccionDemanda() {
             </div>
 
             <div className="flex items-stretch gap-5">
-<<<<<<< HEAD
-              <div className="flex-1 overflow-hidden rounded-[14px] border border-neutral-200 bg-white">
-                <div className="border-b border-neutral-100 px-5 py-3.5">
-                  <h2 className="text-sm font-extrabold text-neutral-900">Comparación de modelos</h2>
-                  <p className="text-xs font-semibold text-neutral-500">
-                    Backtest sobre los últimos meses (MAE, MAPE y MASE, menor es mejor; MASE &lt; 1 supera al ingenuo)
-=======
               <div className="flex-1 fa-table-wrap">
                 <div className="border-b border-[#EDF2F7] px-5 py-3.5">
                   <h2 className="text-sm font-extrabold text-[#13233A]">Comparación de modelos</h2>
                   <p className="text-xs font-semibold text-[#6D7B8F]">
-                    Backtest sobre los últimos meses (MAE y MAPE, menor es mejor)
->>>>>>> 4613cf8 ("feat(ui): renovar identidad visual de FerroAnalytics)
+                    Backtest sobre los últimos meses (MAE, MAPE y MASE, menor es mejor; MASE &lt; 1 supera al ingenuo)
                   </p>
                 </div>
                 <table className="w-full text-sm">
