@@ -11,6 +11,8 @@ from fastapi import APIRouter, HTTPException, Query, UploadFile
 
 from src import almacenamiento as alm
 from src import importador as imp
+from src import importador_bd as imp_bd
+from src.excepciones import ErrorImportacion
 from api import datos
 
 router = APIRouter(prefix="/api", tags=["inventario"])
@@ -99,6 +101,69 @@ async def importar_csv(entidad: str, archivo: UploadFile):
 
     if aceptadas:
         alm.registrar_importacion(archivo.filename)
+        datos.cargar()
+
+    return {
+        "entidad": entidad,
+        "aceptados": len(aceptadas),
+        "rechazados": rechazadas,
+        **resultado,
+    }
+
+
+@router.get("/importar-bd/estado")
+def estado_importar_bd():
+    """
+    Indica si hay una base de datos utilizable en FERRO_BD_URL, sin
+    importar ninguna tabla. El dashboard la usa para mostrar u ocultar la
+    sincronización, en vez de que el botón falle en cada carga cuando no
+    hay ninguna base de datos configurada (el caso normal en desarrollo).
+    """
+    if not os.environ.get("FERRO_BD_URL"):
+        return {"disponible": False, "motor": None, "detalle": None}
+    try:
+        engine = imp_bd.crear_engine()
+    except ErrorImportacion as e:
+        return {"disponible": False, "motor": None, "detalle": str(e)}
+    return {"disponible": True, "motor": imp_bd.nombre_motor(engine), "detalle": None}
+
+
+@router.post("/importar-bd/{entidad}")
+def importar_desde_bd(entidad: str):
+    """
+    Importa categorías, productos o movimientos directamente desde la
+    base de datos configurada en FERRO_BD_URL (Postgres o MySQL), en vez
+    de subir un CSV. Reutiliza src/importador_bd.py y las mismas
+    funciones de guardado que /importar/{entidad}; los movimientos se
+    sincronizan de forma incremental (solo los posteriores al último
+    id_movimiento ya almacenado).
+    """
+    if entidad not in _TIPOS_ENTIDAD:
+        raise HTTPException(404, f"Entidad desconocida: {entidad}")
+
+    engine = imp_bd.crear_engine()
+
+    if entidad == "categorias":
+        aceptadas, rechazadas = imp_bd.importar_categorias_desde_bd(engine)
+        resultado = {"insertados": None, "actualizados": None}
+        if aceptadas:
+            alm.guardar_categorias(aceptadas)
+    elif entidad == "productos":
+        aceptadas, rechazadas = imp_bd.importar_productos_desde_bd(engine)
+        resultado = {"insertados": None, "actualizados": None}
+        if aceptadas:
+            resultado = alm.guardar_productos(aceptadas)
+    else:
+        codigos = alm.obtener_codigos_productos()
+        ids_existentes = alm.obtener_ids_movimientos()
+        desde_id = max(ids_existentes) if ids_existentes else None
+        aceptadas, rechazadas = imp_bd.importar_movimientos_desde_bd(
+            engine, codigos, ids_existentes, desde_id=desde_id)
+        resultado = {"insertados": None, "actualizados": None}
+        if aceptadas:
+            alm.guardar_movimientos(aceptadas)
+
+    if aceptadas:
         datos.cargar()
 
     return {

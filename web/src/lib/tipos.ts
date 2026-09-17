@@ -76,6 +76,12 @@ export interface ResultadoImportacion {
 
 export type EntidadImportable = 'categorias' | 'productos' | 'movimientos'
 
+export interface EstadoImportacionBD {
+  disponible: boolean
+  motor: string | null
+  detalle: string | null
+}
+
 // ──────────────────────────────────────────────
 // Analítica: clasificación ABC-XYZ y predicción de demanda
 // ──────────────────────────────────────────────

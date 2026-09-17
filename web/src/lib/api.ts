@@ -26,6 +26,12 @@ export function importarCSV(
   )
 }
 
+export function importarDesdeBD(entidad: EntidadImportable): Promise<ResultadoImportacion> {
+  return fetch(`/api/importar-bd/${entidad}`, { method: 'POST' }).then(
+    (r) => manejarRespuesta<ResultadoImportacion>(r),
+  )
+}
+
 export function formatearLempiras(valor: number): string {
   return `L ${valor.toLocaleString('es-HN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }

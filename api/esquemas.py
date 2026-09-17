@@ -92,6 +92,12 @@ class ResultadoImportacion(BaseModel):
     actualizados: int | None = None
 
 
+class EstadoImportacionBD(BaseModel):
+    disponible: bool
+    motor: str | None
+    detalle: str | None
+
+
 # ──────────────────────────────────────────────
 # Analítica: clasificación ABC-XYZ (src/clasificacion.py)
 # ──────────────────────────────────────────────

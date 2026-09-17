@@ -1,13 +1,14 @@
 // Hooks de TanStack Query, uno por endpoint de la API.
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { importarCSV, obtenerJSON } from './api'
+import { importarCSV, importarDesdeBD, obtenerJSON } from './api'
 import type {
   AlertaStockBajo,
   CeldaResumen,
   Categoria,
   ClasificacionABCXYZ,
   EntidadImportable,
+  EstadoImportacionBD,
   Movimiento,
   Producto,
   ProductoInmovilizado,
@@ -159,6 +160,23 @@ export function useImportarCSV() {
       importarCSV(entidad, archivo),
     onSuccess: () => {
       // Los datos en el backend cambiaron; invalida todo lo que depende de ellos.
+      cliente.invalidateQueries()
+    },
+  })
+}
+
+export function useEstadoImportacionBD() {
+  return useQuery({
+    queryKey: ['importar-bd', 'estado'],
+    queryFn: () => obtenerJSON<EstadoImportacionBD>('/api/importar-bd/estado'),
+  })
+}
+
+export function useImportarDesdeBD() {
+  const cliente = useQueryClient()
+  return useMutation({
+    mutationFn: (entidad: EntidadImportable) => importarDesdeBD(entidad),
+    onSuccess: () => {
       cliente.invalidateQueries()
     },
   })

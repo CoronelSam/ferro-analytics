@@ -60,7 +60,8 @@ Si el sistema de inventario real usa otros nombres de tabla, cada función acept
 
 ## Uso
 
-Desde el menú de consola, opción **[8] Importar desde base de datos (Postgres/MySQL)**: pide el tipo de dato (categorías, productos o movimientos), consulta la tabla correspondiente y aplica el mismo flujo de `guardar_categorias`/`guardar_productos`/`guardar_movimientos` que la importación por CSV.
+- **Menú de consola**, opción **[8] Importar desde base de datos (Postgres/MySQL)**: pide el tipo de dato (categorías, productos o movimientos), consulta la tabla correspondiente y aplica el mismo flujo de `guardar_categorias`/`guardar_productos`/`guardar_movimientos` que la importación por CSV.
+- **Dashboard web**, página **Importar → pestaña "Base de datos"**: mismo flujo, con un botón "Sincronizar ahora" en vez de un formulario. `GET /api/importar-bd/estado` le dice al dashboard si hay una conexión utilizable y de qué motor, para mostrar u ocultar la sincronización en vez de fallar en cada carga cuando `FERRO_BD_URL` no está definida (el caso normal en desarrollo); `POST /api/importar-bd/{entidad}` hace la importación y devuelve el mismo `ResultadoImportacion` que ya usa la pestaña de CSV.
 
 Programáticamente:
 
@@ -91,3 +92,5 @@ Esto **asume que `id_movimiento` crece con el tiempo** en el sistema de origen (
 ## Seguridad
 
 Los nombres de tabla se interpolan en el SQL (SQLAlchemy no los parametriza como parametriza valores), así que `importador_bd` valida que sean un identificador simple (`^[A-Za-z_][A-Za-z0-9_]*$`) antes de construir la consulta; cualquier otro valor se rechaza con `ErrorImportacion` sin llegar a tocar la base de datos. Los valores de cada fila sí van parametrizados (`:desde_id`).
+
+La API no tiene autenticación (igual que `/api/importar/{entidad}` con CSV), así que cualquiera que llegue al dashboard puede disparar `POST /api/importar-bd/{entidad}` y forzar una sincronización. No es un riesgo nuevo de este módulo, pero conviene tenerlo presente si el proyecto llega a exponerse fuera de una red de confianza.
