@@ -12,12 +12,13 @@ load_dotenv()  # variables opcionales en .env (p. ej. FERRO_BD_URL), antes de le
 
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from api import datos
 from api.rutas import analitica, inventario, reportes
+from api.seguridad import exigir_clave_para_mutaciones, modo_solo_lectura_activo
 from src.excepciones import (
     ArchivoCorrupto,
     DatosInsuficientes,
@@ -39,7 +40,11 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="FerroAnalytics API", lifespan=lifespan)
+app = FastAPI(
+    title="FerroAnalytics API",
+    lifespan=lifespan,
+    dependencies=[Depends(exigir_clave_para_mutaciones)],
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -91,4 +96,4 @@ def manejar_error_generico(request: Request, exc: FerroAnalyticsError):
 
 @app.get("/api/salud")
 def salud():
-    return {"estado": "ok"}
+    return {"estado": "ok", "solo_lectura": modo_solo_lectura_activo()}

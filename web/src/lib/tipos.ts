@@ -95,6 +95,11 @@ export interface EstadoImportacionBD {
   detalle: string | null
 }
 
+export interface Salud {
+  estado: string
+  solo_lectura: boolean
+}
+
 // ──────────────────────────────────────────────
 // Analítica: clasificación ABC-XYZ y predicción de demanda
 // ──────────────────────────────────────────────

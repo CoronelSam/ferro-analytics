@@ -115,5 +115,6 @@ Todas bajo `/api/analitica`, implementadas en `api/rutas/analitica.py` sobre la 
 | `GET /abc-xyz/resumen` | Matriz de 9 celdas (conteos y valor de consumo) | — |
 | `GET /abc-xyz/migraciones` | Productos cuya celda cambió respecto al mes anterior (ver arriba) | `ventana_meses` (2-36, por defecto 12) |
 | `GET /prediccion/productos-prioritarios` | Códigos de productos A/X | — |
+| `GET /prediccion/lote` | Pronostica todos los productos A/X de una sola vez (evita N llamadas a `/prediccion/producto/{codigo}` desde el dashboard) | mismos que `/prediccion/producto/{codigo}` |
 | `GET /prediccion/categoria/{id_categoria}` | Compara los 5 modelos y pronostica una categoría, con banda de confianza | `n` (meses, 1-12), `n_prueba` (meses de backtest, 1-12), `nivel_confianza` (0-1 exclusivo) |
 | `GET /prediccion/producto/{codigo}` | Igual, por producto, con punto de reorden | además `tiempo_entrega_dias` (1-90), `nivel_servicio` (0-1 exclusivo) |

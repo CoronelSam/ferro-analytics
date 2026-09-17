@@ -109,6 +109,38 @@ def test_productos_prioritarios_son_consistentes_con_abc_xyz(cliente):
     assert all(clasificacion[codigo]["celda"] == "AX" for codigo in prioritarios)
 
 
+def test_prediccion_lote_sin_datos_devuelve_lista_vacia(cliente):
+    respuesta = cliente.get("/api/analitica/prediccion/lote")
+
+    assert respuesta.status_code == 200
+    assert respuesta.json() == []
+
+
+def test_prediccion_lote_devuelve_todos_los_productos_prioritarios(cliente):
+    _cargar_historial(cliente)
+
+    prioritarios = cliente.get("/api/analitica/prediccion/productos-prioritarios").json()
+    lote = cliente.get("/api/analitica/prediccion/lote", params={"n": 2}).json()
+
+    assert {r["codigo"] for r in lote} == set(prioritarios)
+    for r in lote:
+        assert len(r["pronostico"]) == 2
+        assert len(r["intervalo_confianza"]) == 2
+        assert "punto_reorden" in r
+        assert "serie_historica" in r
+
+
+def test_prediccion_lote_coincide_con_prediccion_individual(cliente):
+    _cargar_historial(cliente)
+
+    lote = cliente.get("/api/analitica/prediccion/lote").json()
+    assert len(lote) >= 1
+    individual = cliente.get(f"/api/analitica/prediccion/producto/{lote[0]['codigo']}").json()
+
+    assert lote[0]["mejor_modelo"] == individual["mejor_modelo"]
+    assert lote[0]["pronostico"] == individual["pronostico"]
+
+
 def test_prediccion_producto_sin_historial_devuelve_422(cliente):
     subir_csv(cliente, "categorias", "categorias.csv", csv_categorias([(1, "Herramientas")]))
     subir_csv(

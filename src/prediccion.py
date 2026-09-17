@@ -568,3 +568,47 @@ def pronosticar_categoria(
         "pronostico": [round(v, 2) for v in pronostico],
         "intervalo_confianza": _intervalos_confianza(pronostico, desviacion_residual, nivel_confianza),
     }
+
+
+def pronosticar_productos_prioritarios(
+    productos: list,
+    movimientos: list,
+    n: int = 1,
+    n_prueba: int = 3,
+    tiempo_entrega_dias: int = 7,
+    nivel_servicio: float = 0.95,
+    nivel_confianza: float = 0.95,
+) -> list:
+    """
+    Pronostica todos los productos A/X (productos_prioritarios()) de una
+    sola corrida, en vez de que el llamador tenga que pedir uno por uno
+    con pronosticar_producto() (N llamadas HTTP desde el dashboard si se
+    quisiera mostrarlos todos juntos).
+
+    Recibe los mismos parámetros que pronosticar_producto(), aplicados por
+    igual a cada producto.
+
+    Devuelve una lista de dicts (mismo formato que pronosticar_producto()),
+    ordenada por código. Un producto A/X sin suficiente historial para
+    pronosticar (la clasificación ABC-XYZ no exige los mismos 15 meses que
+    la predicción) se omite en vez de interrumpir a los demás, igual que
+    comparar_modelos() con un modelo sin historial suficiente. Nunca lanza
+    DatosInsuficientes: sin ningún producto pronosticable, devuelve una
+    lista vacía.
+    """
+    try:
+        prioritarios = productos_prioritarios(productos, movimientos)
+    except DatosInsuficientes:
+        return []
+
+    resultado = []
+    for codigo in sorted(prioritarios):
+        try:
+            resultado.append(pronosticar_producto(
+                productos, movimientos, codigo, n=n, n_prueba=n_prueba,
+                tiempo_entrega_dias=tiempo_entrega_dias, nivel_servicio=nivel_servicio,
+                nivel_confianza=nivel_confianza,
+            ))
+        except DatosInsuficientes:
+            continue
+    return resultado

@@ -22,6 +22,7 @@ import {
   useMigracionesABCXYZ,
   useProductosPrioritarios,
   usePronosticoCategoria,
+  usePronosticoLote,
   usePronosticoProducto,
   useResumenABCXYZ,
 } from '../lib/consultas'
@@ -303,6 +304,16 @@ function PrediccionDemanda() {
     return [...historico, ...futuro]
   }, [resultado])
 
+  const filasPronosticoExportable = useMemo(() => {
+    if (!resultado) return []
+    return resultado.meses_pronosticados.map((mes, i) => ({
+      mes,
+      pronostico: resultado.pronostico[i],
+      limite_inferior: resultado.intervalo_confianza[i].limite_inferior,
+      limite_superior: resultado.intervalo_confianza[i].limite_superior,
+    }))
+  }, [resultado])
+
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-end gap-4 fa-card px-6 py-5">
@@ -425,11 +436,25 @@ function PrediccionDemanda() {
 
             <div className="flex items-stretch gap-5">
               <div className="flex-1 fa-table-wrap">
-                <div className="border-b border-[#EDF2F7] px-5 py-3.5">
-                  <h2 className="text-sm font-extrabold text-[#13233A]">Comparación de modelos</h2>
-                  <p className="text-xs font-semibold text-[#6D7B8F]">
-                    Backtest sobre los últimos meses (MAE, MAPE y MASE, menor es mejor; MASE &lt; 1 supera al ingenuo)
-                  </p>
+                <div className="flex items-center justify-between border-b border-[#EDF2F7] px-5 py-3.5">
+                  <div>
+                    <h2 className="text-sm font-extrabold text-[#13233A]">Comparación de modelos</h2>
+                    <p className="text-xs font-semibold text-[#6D7B8F]">
+                      Backtest sobre los últimos meses (MAE, MAPE y MASE, menor es mejor; MASE &lt; 1 supera al ingenuo)
+                    </p>
+                  </div>
+                  <BotonFantasma
+                    onClick={() =>
+                      descargarCSV(
+                        `prediccion_${'codigo' in resultado ? resultado.codigo : resultado.id_categoria}`,
+                        filasPronosticoExportable,
+                      )
+                    }
+                    disabled={!filasPronosticoExportable.length}
+                  >
+                    <IconoDescargar size={16} />
+                    Exportar
+                  </BotonFantasma>
                 </div>
                 <table className="w-full text-sm">
                   <thead className="text-left text-[10.5px] font-extrabold uppercase tracking-wide text-[#6D7B8F]">
@@ -484,6 +509,84 @@ function PrediccionDemanda() {
             </div>
           </div>
         )}
+      </Estado>
+
+      <ResumenProductosAX n={n} />
+    </div>
+  )
+}
+
+function ResumenProductosAX({ n }: { n: number }) {
+  const lote = usePronosticoLote({ n })
+
+  const filasExportables = useMemo(
+    () =>
+      (lote.data ?? []).flatMap((r) =>
+        r.meses_pronosticados.map((mes, i) => ({
+          codigo: r.codigo,
+          mes,
+          mejor_modelo: r.mejor_modelo,
+          pronostico: r.pronostico[i],
+          limite_inferior: r.intervalo_confianza[i].limite_inferior,
+          limite_superior: r.intervalo_confianza[i].limite_superior,
+          punto_reorden: r.punto_reorden,
+        })),
+      ),
+    [lote.data],
+  )
+
+  return (
+    <div className="fa-table-wrap">
+      <div className="flex items-center justify-between border-b border-[#EDF2F7] px-5 py-3.5">
+        <div>
+          <h2 className="text-sm font-extrabold text-[#13233A]">Resumen de productos A/X</h2>
+          <p className="text-xs font-semibold text-[#6D7B8F]">
+            Pronóstico del próximo mes para todos los productos de alta prioridad y demanda estable a la vez
+            (/prediccion/lote, en vez de una llamada por producto)
+          </p>
+        </div>
+        <BotonFantasma
+          onClick={() => descargarCSV('predicciones_productos_ax', filasExportables)}
+          disabled={!filasExportables.length}
+        >
+          <IconoDescargar size={16} />
+          Exportar CSV
+        </BotonFantasma>
+      </div>
+      <Estado
+        cargando={lote.isLoading}
+        error={lote.error}
+        vacio={lote.data?.length === 0}
+        mensajeVacio="Ningún producto A/X tiene historial suficiente para pronosticar todavía."
+      >
+        <table className="w-full text-sm">
+          <thead className="bg-[#F5F8FC] text-left text-[10.5px] font-extrabold uppercase tracking-wide text-[#6D7B8F]">
+            <tr>
+              <th className="px-5 py-2.5">Código</th>
+              <th className="px-5 py-2.5">Mejor modelo</th>
+              <th className="px-5 py-2.5 text-right">Próximo mes</th>
+              <th className="px-5 py-2.5 text-right">Banda de confianza</th>
+              <th className="px-5 py-2.5 text-right">Punto de reorden</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-neutral-100">
+            {lote.data?.map((r) => (
+              <tr key={r.codigo}>
+                <td className="px-5 py-3 font-mono text-xs font-bold text-[#3E536C]">{r.codigo}</td>
+                <td className="px-5 py-3 text-[13px] font-semibold text-[#243B55]">
+                  {NOMBRES_MODELO[r.mejor_modelo] ?? r.mejor_modelo}
+                </td>
+                <td className="px-5 py-3 text-right text-[13px] font-bold text-[#13233A]">{r.pronostico[0]} uds</td>
+                <td className="px-5 py-3 text-right text-[12.5px] font-semibold text-[#6D7B8F]">
+                  {r.intervalo_confianza[0].limite_inferior} – {r.intervalo_confianza[0].limite_superior}
+                </td>
+                <td className="px-5 py-3 text-right text-[13px] font-bold text-[#124E96]">
+                  {r.punto_reorden} uds
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </Estado>
     </div>
   )

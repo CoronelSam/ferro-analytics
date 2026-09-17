@@ -16,9 +16,18 @@ import type {
   ProductoInmovilizado,
   PronosticoCategoria,
   PronosticoProducto,
+  Salud,
   StockPorCategoria,
   VentaMensualCategoria,
 } from './tipos'
+
+export function useSalud() {
+  return useQuery({
+    queryKey: ['salud'],
+    queryFn: () => obtenerJSON<Salud>('/api/salud'),
+    staleTime: 60_000,
+  })
+}
 
 export function useProductos() {
   return useQuery({
@@ -110,6 +119,18 @@ export function useProductosPrioritarios() {
   return useQuery({
     queryKey: ['analitica', 'prediccion', 'productos-prioritarios'],
     queryFn: () => obtenerJSON<string[]>('/api/analitica/prediccion/productos-prioritarios'),
+  })
+}
+
+/** Pronóstico de todos los productos A/X en una sola llamada (ver /prediccion/lote). */
+export function usePronosticoLote(opciones: OpcionesPronostico = {}) {
+  const parametros = new URLSearchParams()
+  if (opciones.n) parametros.set('n', String(opciones.n))
+  if (opciones.nPrueba) parametros.set('n_prueba', String(opciones.nPrueba))
+
+  return useQuery({
+    queryKey: ['analitica', 'prediccion', 'lote', opciones],
+    queryFn: () => obtenerJSON<PronosticoProducto[]>(`/api/analitica/prediccion/lote?${parametros}`),
   })
 }
 

@@ -1,4 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom'
+import { AccesoApi } from './AccesoApi'
 import {
   IconoPanel,
   IconoInventario,
@@ -65,11 +66,14 @@ export function Layout() {
           ))}
         </nav>
 
-        <div className="mt-auto rounded-xl border border-[#FFE0CC] bg-[#FFF7F1] px-3 py-3">
-          <p className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#E65F00]">FerroAnalytics</p>
-          <p className="mt-1 text-[11px] font-semibold leading-relaxed text-[#6D7B8F]">
-            Control visual, análisis y seguimiento del inventario.
-          </p>
+        <div className="mt-auto flex flex-col gap-3">
+          <AccesoApi />
+          <div className="rounded-xl border border-[#FFE0CC] bg-[#FFF7F1] px-3 py-3">
+            <p className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#E65F00]">FerroAnalytics</p>
+            <p className="mt-1 text-[11px] font-semibold leading-relaxed text-[#6D7B8F]">
+              Control visual, análisis y seguimiento del inventario.
+            </p>
+          </div>
         </div>
       </aside>
 

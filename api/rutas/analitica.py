@@ -65,6 +65,35 @@ def obtener_productos_prioritarios():
     return pred.productos_prioritarios(datos.productos(), datos.movimientos())
 
 
+@router.get("/prediccion/lote")
+def pronosticar_demanda_lote(
+    n: int = Query(default=1, ge=1, le=12, description="Meses futuros a pronosticar"),
+    n_prueba: int = Query(default=3, ge=1, le=12, description="Meses finales usados para el backtest"),
+    tiempo_entrega_dias: int = Query(default=7, ge=1, le=90),
+    nivel_servicio: float = Query(default=0.95, gt=0, lt=1),
+    nivel_confianza: float = Query(default=0.95, gt=0, lt=1, description="Nivel de confianza del pronóstico"),
+):
+    """
+    Pronostica todos los productos A/X de una sola vez (mismo resultado que
+    llamar /prediccion/producto/{codigo} para cada uno de
+    /prediccion/productos-prioritarios, pero en una sola petición). Nunca
+    da 422: un producto sin historial suficiente se omite del resultado.
+    """
+    productos = datos.productos()
+    movimientos = datos.movimientos()
+    meses = pred.meses_periodo(movimientos)
+
+    resultados = pred.pronosticar_productos_prioritarios(
+        productos, movimientos, n=n, n_prueba=n_prueba,
+        tiempo_entrega_dias=tiempo_entrega_dias, nivel_servicio=nivel_servicio,
+        nivel_confianza=nivel_confianza,
+    )
+    return [
+        _con_serie_historica(r, meses, pred.serie_mensual_producto(movimientos, r["codigo"], meses))
+        for r in resultados
+    ]
+
+
 @router.get("/prediccion/categoria/{id_categoria}")
 def pronosticar_demanda_categoria(
     id_categoria: int,

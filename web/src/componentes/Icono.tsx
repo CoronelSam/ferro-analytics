@@ -86,6 +86,24 @@ export function IconoFlecha({ size = 20, className }: Props) {
   )
 }
 
+export function IconoCandado({ size = 20, className }: Props) {
+  return (
+    <svg viewBox="0 0 20 20" width={size} height={size} className={className} {...base}>
+      <rect x="4.5" y="9" width="11" height="8" rx="1.8" />
+      <path d="M6.8 9V6.5a3.2 3.2 0 0 1 6.4 0V9" />
+    </svg>
+  )
+}
+
+export function IconoCandadoAbierto({ size = 20, className }: Props) {
+  return (
+    <svg viewBox="0 0 20 20" width={size} height={size} className={className} {...base}>
+      <rect x="4.5" y="9" width="11" height="8" rx="1.8" />
+      <path d="M6.8 9V6.5a3.2 3.2 0 0 1 6.2-1" />
+    </svg>
+  )
+}
+
 export function IconoCheck({ size = 20, className }: Props) {
   return (
     <svg viewBox="0 0 20 20" width={size} height={size} className={className} {...base}>
