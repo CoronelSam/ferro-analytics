@@ -1,0 +1,11 @@
+id,nombre
+1,Tornillería
+2,Herramientas Manuales
+3,Herramientas Eléctricas
+4,Pintura y Acabados
+5,Electricidad
+6,Plomería
+,Sin id
+7,
+-1,Id negativo
+X,Id no numérico
