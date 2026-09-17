@@ -44,7 +44,7 @@ export function Reportes() {
       </Cabecera>
 
       <div className="flex flex-col gap-5 px-8 py-7">
-        <div className="flex border-b border-neutral-200">
+        <div className="flex border-b border-[#DCE5EF]">
           <Pestana activa={pestana === 'inmovilizado'} onClick={() => setPestana('inmovilizado')}>
             Top inmovilizado
           </Pestana>
@@ -63,7 +63,7 @@ function Pestana({ activa, onClick, children }: { activa: boolean; onClick: () =
     <button
       onClick={onClick}
       className={`-mb-px border-b-2 px-1 py-2.5 mr-6 text-[13.5px] font-extrabold ${
-        activa ? 'border-neutral-900 text-neutral-900' : 'border-transparent text-neutral-500'
+        activa ? 'border-[#124E96] text-[#124E96]' : 'border-transparent text-[#6D7B8F]'
       }`}
     >
       {children}
@@ -81,9 +81,9 @@ function TopInmovilizado() {
       vacio={reporte.data?.length === 0}
       mensajeVacio="No hay productos inmovilizados en los últimos 90 días."
     >
-      <div className="overflow-hidden rounded-[14px] border border-neutral-200 bg-white">
+      <div className="fa-table-wrap">
         <table className="w-full text-sm">
-          <thead className="bg-neutral-50 text-left text-[10.5px] font-extrabold uppercase tracking-wide text-neutral-500">
+          <thead className="bg-[#F5F8FC] text-left text-[10.5px] font-extrabold uppercase tracking-wide text-[#6D7B8F]">
             <tr>
               <th className="px-4 py-2.5">Código</th>
               <th className="px-4 py-2.5">Nombre</th>
@@ -95,11 +95,11 @@ function TopInmovilizado() {
           <tbody className="divide-y divide-neutral-100">
             {reporte.data?.map((p) => (
               <tr key={p.codigo}>
-                <td className="px-4 py-3 font-mono text-xs font-bold text-neutral-700">{p.codigo}</td>
-                <td className="px-4 py-3 text-[13px] font-bold text-neutral-900">{p.nombre}</td>
-                <td className="px-4 py-3 text-right text-[13px] font-semibold text-neutral-700">{p.stock_actual}</td>
-                <td className="px-4 py-3 text-right text-[13px] font-bold text-neutral-900">{formatearLempiras(p.valor_inmovilizado)}</td>
-                <td className="px-4 py-3 text-[12.5px] font-semibold text-neutral-500">{p.ultima_salida ?? 'Sin salidas'}</td>
+                <td className="px-4 py-3 font-mono text-xs font-bold text-[#3E536C]">{p.codigo}</td>
+                <td className="px-4 py-3 text-[13px] font-bold text-[#13233A]">{p.nombre}</td>
+                <td className="px-4 py-3 text-right text-[13px] font-semibold text-[#3E536C]">{p.stock_actual}</td>
+                <td className="px-4 py-3 text-right text-[13px] font-bold text-[#13233A]">{formatearLempiras(p.valor_inmovilizado)}</td>
+                <td className="px-4 py-3 text-[12.5px] font-semibold text-[#6D7B8F]">{p.ultima_salida ?? 'Sin salidas'}</td>
               </tr>
             ))}
           </tbody>
@@ -144,7 +144,7 @@ function VentasMensuales() {
       vacio={filas.length === 0}
       mensajeVacio="No hay ventas registradas todavía."
     >
-      <div className="h-96 rounded-[14px] border border-neutral-200 bg-white p-6">
+      <div className="h-96 fa-card p-6">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={filas}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e5e5" />

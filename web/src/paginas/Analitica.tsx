@@ -35,7 +35,7 @@ const CLASES_XYZ: ClaseXYZ[] = ['X', 'Y', 'Z']
 const COLOR_ABC: Record<ClaseABC, string> = {
   A: 'bg-emerald-50 text-emerald-700 border-emerald-200',
   B: 'bg-amber-50 text-amber-700 border-amber-200',
-  C: 'bg-neutral-100 text-neutral-600 border-neutral-200',
+  C: 'bg-[#EDF3F9] text-[#53647A] border-[#DCE5EF]',
 }
 
 // Etiquetas en lenguaje llano para las clases técnicas ABC/XYZ.
@@ -72,7 +72,7 @@ export function Analitica() {
       </Cabecera>
 
       <div className="flex flex-col gap-5 px-8 py-7">
-        <div className="flex border-b border-neutral-200">
+        <div className="flex border-b border-[#DCE5EF]">
           <Pestana activa={pestana === 'clasificacion'} onClick={() => setPestana('clasificacion')}>
             Clasificación ABC-XYZ
           </Pestana>
@@ -91,7 +91,7 @@ function Pestana({ activa, onClick, children }: { activa: boolean; onClick: () =
     <button
       onClick={onClick}
       className={`-mb-px border-b-2 px-1 py-2.5 mr-6 text-[13.5px] font-extrabold ${
-        activa ? 'border-neutral-900 text-neutral-900' : 'border-transparent text-neutral-500'
+        activa ? 'border-[#124E96] text-[#124E96]' : 'border-transparent text-[#6D7B8F]'
       }`}
     >
       {children}
@@ -153,9 +153,9 @@ function ClasificacionABCXYZ() {
           vacio={clasificacion.data?.length === 0}
           mensajeVacio="No hay productos clasificados todavía."
         >
-          <div className="overflow-hidden rounded-[14px] border border-neutral-200 bg-white">
+          <div className="fa-table-wrap">
             <table className="w-full text-sm">
-              <thead className="bg-neutral-50 text-left text-[10.5px] font-extrabold uppercase tracking-wide text-neutral-500">
+              <thead className="bg-[#F5F8FC] text-left text-[10.5px] font-extrabold uppercase tracking-wide text-[#6D7B8F]">
                 <tr>
                   <th className="px-4 py-2.5">Código</th>
                   <th className="px-4 py-2.5">Nombre</th>
@@ -168,11 +168,17 @@ function ClasificacionABCXYZ() {
               <tbody className="divide-y divide-neutral-100">
                 {clasificacion.data?.map((r) => (
                   <tr key={r.codigo}>
-                    <td className="px-4 py-3 font-mono text-xs font-bold text-neutral-700">{r.codigo}</td>
-                    <td className="px-4 py-3 text-[13px] font-bold text-neutral-900">{r.nombre}</td>
-                    <td className="px-4 py-3 text-right text-[13px] font-bold text-neutral-900">
+                    <td className="px-4 py-3 font-mono text-xs font-bold text-[#3E536C]">{r.codigo}</td>
+                    <td className="px-4 py-3 text-[13px] font-bold text-[#13233A]">{r.nombre}</td>
+                    <td className="px-4 py-3 text-right text-[13px] font-bold text-[#13233A]">
                       {formatearLempiras(r.valor_consumo)}
                     </td>
+<<<<<<< HEAD
+=======
+                    <td className="px-4 py-3 text-right text-[13px] font-semibold text-[#53647A]">
+                      {r.cv_demanda ?? '—'}
+                    </td>
+>>>>>>> 4613cf8 ("feat(ui): renovar identidad visual de FerroAnalytics)
                     <td className="px-4 py-3">
                       <span className={`rounded-full border px-2.5 py-1 text-xs font-extrabold ${COLOR_ABC[r.clase_abc]}`}>
                         {ETIQUETA_ABC[r.clase_abc]} ({r.clase_abc})
@@ -305,15 +311,15 @@ function PrediccionDemanda() {
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex flex-wrap items-end gap-4 rounded-[14px] border border-neutral-200 bg-white px-6 py-5">
+      <div className="flex flex-wrap items-end gap-4 fa-card px-6 py-5">
         <Campo etiqueta="Alcance">
-          <div className="flex gap-0.5 rounded-[9px] bg-neutral-100 p-[3px]">
+          <div className="flex gap-0.5 rounded-[9px] bg-[#EDF3F9] p-[3px]">
             {(['categoria', 'producto'] as const).map((a) => (
               <button
                 key={a}
                 onClick={() => setAlcance(a)}
                 className={`rounded-[7px] px-3.5 py-2 text-[12.5px] font-bold capitalize ${
-                  alcance === a ? 'bg-white text-neutral-900 shadow-sm' : 'text-neutral-500'
+                  alcance === a ? 'bg-white text-[#13233A] shadow-sm' : 'text-[#6D7B8F]'
                 }`}
               >
                 {a}
@@ -327,7 +333,7 @@ function PrediccionDemanda() {
             <select
               value={categoriaActiva ?? ''}
               onChange={(e) => setIdCategoria(Number(e.target.value))}
-              className="w-[180px] rounded-[9px] border border-neutral-200 px-3 py-2 text-[13px] font-bold text-neutral-800"
+              className="w-[180px] rounded-[9px] border border-[#DCE5EF] px-3 py-2 text-[13px] font-bold text-[#243B55]"
             >
               {categorias.data?.map((c) => (
                 <option key={c.id} value={c.id}>{c.nombre}</option>
@@ -339,7 +345,7 @@ function PrediccionDemanda() {
             <select
               value={productoActivo ?? ''}
               onChange={(e) => setCodigoProducto(e.target.value)}
-              className="w-[180px] rounded-[9px] border border-neutral-200 px-3 py-2 font-mono text-[13px] font-bold text-neutral-800"
+              className="w-[180px] rounded-[9px] border border-[#DCE5EF] px-3 py-2 font-mono text-[13px] font-bold text-[#243B55]"
             >
               {prioritarios.data?.map((codigo) => (
                 <option key={codigo} value={codigo}>{codigo}</option>
@@ -355,7 +361,7 @@ function PrediccionDemanda() {
             max={12}
             value={n}
             onChange={(e) => setN(Math.max(1, Math.min(12, Number(e.target.value) || 1)))}
-            className="w-[90px] rounded-[9px] border border-neutral-200 px-3 py-2 text-[13px] font-bold text-neutral-800"
+            className="w-[90px] rounded-[9px] border border-[#DCE5EF] px-3 py-2 text-[13px] font-bold text-[#243B55]"
           />
         </Campo>
 
@@ -367,14 +373,14 @@ function PrediccionDemanda() {
               max={90}
               value={tiempoEntregaDias}
               onChange={(e) => setTiempoEntregaDias(Math.max(1, Math.min(90, Number(e.target.value) || 1)))}
-              className="w-[90px] rounded-[9px] border border-neutral-200 px-3 py-2 text-[13px] font-bold text-neutral-800"
+              className="w-[90px] rounded-[9px] border border-[#DCE5EF] px-3 py-2 text-[13px] font-bold text-[#243B55]"
             />
           </Campo>
         )}
       </div>
 
       {alcance === 'producto' && prioritarios.data?.length === 0 && (
-        <p className="text-sm font-semibold text-neutral-500">
+        <p className="text-sm font-semibold text-[#6D7B8F]">
           Ningún producto quedó clasificado como A/X (alto valor y demanda estable) todavía.
         </p>
       )}
@@ -386,7 +392,7 @@ function PrediccionDemanda() {
       >
         {resultado && (
           <div className="flex flex-col gap-5">
-            <div className="h-80 rounded-[14px] border border-neutral-200 bg-white p-6">
+            <div className="h-80 fa-card p-6">
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={datosGrafico}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e5e5" />
@@ -424,15 +430,23 @@ function PrediccionDemanda() {
             </div>
 
             <div className="flex items-stretch gap-5">
+<<<<<<< HEAD
               <div className="flex-1 overflow-hidden rounded-[14px] border border-neutral-200 bg-white">
                 <div className="border-b border-neutral-100 px-5 py-3.5">
                   <h2 className="text-sm font-extrabold text-neutral-900">Comparación de modelos</h2>
                   <p className="text-xs font-semibold text-neutral-500">
                     Backtest sobre los últimos meses (MAE, MAPE y MASE, menor es mejor; MASE &lt; 1 supera al ingenuo)
+=======
+              <div className="flex-1 fa-table-wrap">
+                <div className="border-b border-[#EDF2F7] px-5 py-3.5">
+                  <h2 className="text-sm font-extrabold text-[#13233A]">Comparación de modelos</h2>
+                  <p className="text-xs font-semibold text-[#6D7B8F]">
+                    Backtest sobre los últimos meses (MAE y MAPE, menor es mejor)
+>>>>>>> 4613cf8 ("feat(ui): renovar identidad visual de FerroAnalytics)
                   </p>
                 </div>
                 <table className="w-full text-sm">
-                  <thead className="text-left text-[10.5px] font-extrabold uppercase tracking-wide text-neutral-500">
+                  <thead className="text-left text-[10.5px] font-extrabold uppercase tracking-wide text-[#6D7B8F]">
                     <tr>
                       <th className="px-5 py-2">Modelo</th>
                       <th className="px-5 py-2 text-right">MAE</th>
@@ -443,7 +457,7 @@ function PrediccionDemanda() {
                   <tbody className="divide-y divide-neutral-100">
                     {resultado.comparacion_modelos.map((m: ComparacionModelo) => (
                       <tr key={m.modelo} className={m.modelo === resultado.mejor_modelo ? 'bg-emerald-50' : ''}>
-                        <td className="px-5 py-2.5 text-[13px] font-bold text-neutral-800">
+                        <td className="px-5 py-2.5 text-[13px] font-bold text-[#243B55]">
                           {NOMBRES_MODELO[m.modelo] ?? m.modelo}
                           {m.modelo === resultado.mejor_modelo && (
                             <span className="ml-2 rounded-full bg-emerald-600 px-2 py-0.5 text-[10px] font-extrabold text-white">
@@ -451,8 +465,8 @@ function PrediccionDemanda() {
                             </span>
                           )}
                         </td>
-                        <td className="px-5 py-2.5 text-right text-[13px] font-semibold text-neutral-700">{m.mae}</td>
-                        <td className="px-5 py-2.5 text-right text-[13px] font-semibold text-neutral-700">
+                        <td className="px-5 py-2.5 text-right text-[13px] font-semibold text-[#3E536C]">{m.mae}</td>
+                        <td className="px-5 py-2.5 text-right text-[13px] font-semibold text-[#3E536C]">
                           {m.mape !== null ? `${m.mape}%` : '—'}
                         </td>
                         <td className="px-5 py-2.5 text-right text-[13px] font-semibold text-neutral-700">
@@ -465,16 +479,16 @@ function PrediccionDemanda() {
               </div>
 
               {'punto_reorden' in resultado && (
-                <div className="w-[280px] flex-shrink-0 rounded-[14px] border border-neutral-200 bg-white p-5">
-                  <h2 className="text-sm font-extrabold text-neutral-900">Punto de reorden</h2>
-                  <p className="mb-3 text-xs font-semibold text-neutral-500">
+                <div className="w-[280px] flex-shrink-0 fa-card p-5">
+                  <h2 className="text-sm font-extrabold text-[#13233A]">Punto de reorden</h2>
+                  <p className="mb-3 text-xs font-semibold text-[#6D7B8F]">
                     Con {tiempoEntregaDias} días de entrega y 95% de nivel de servicio
                   </p>
                   <div className="flex flex-col gap-2.5">
                     <FilaDato etiqueta="Demanda diaria media" valor={`${resultado.demanda_diaria_media} uds`} />
                     <FilaDato etiqueta="Desviación diaria" valor={`${resultado.demanda_diaria_desviacion} uds`} />
                     <FilaDato etiqueta="Stock de seguridad" valor={`${resultado.stock_seguridad} uds`} />
-                    <div className="mt-1 rounded-[9px] bg-neutral-900 px-3.5 py-3">
+                    <div className="mt-1 rounded-[9px] bg-[#124E96] px-3.5 py-3">
                       <div className="text-[11px] font-bold text-neutral-300">Punto de reorden</div>
                       <div className="text-xl font-extrabold text-white">{resultado.punto_reorden} uds</div>
                     </div>
@@ -492,7 +506,7 @@ function PrediccionDemanda() {
 function Campo({ etiqueta, children }: { etiqueta: string; children: ReactNode }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <span className="text-[11px] font-extrabold uppercase tracking-wide text-neutral-500">{etiqueta}</span>
+      <span className="text-[11px] font-extrabold uppercase tracking-wide text-[#6D7B8F]">{etiqueta}</span>
       {children}
     </div>
   )
@@ -501,8 +515,8 @@ function Campo({ etiqueta, children }: { etiqueta: string; children: ReactNode }
 function FilaDato({ etiqueta, valor }: { etiqueta: string; valor: string }) {
   return (
     <div className="flex items-center justify-between">
-      <span className="text-xs font-semibold text-neutral-500">{etiqueta}</span>
-      <span className="text-[13px] font-bold text-neutral-800">{valor}</span>
+      <span className="text-xs font-semibold text-[#6D7B8F]">{etiqueta}</span>
+      <span className="text-[13px] font-bold text-[#243B55]">{valor}</span>
     </div>
   )
 }

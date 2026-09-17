@@ -1,15 +1,121 @@
-@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap");
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
 
 :root {
-  --cat-1: #2a78d6; --cat-1-t: #e8f1fb;
-  --cat-2: #eb6834; --cat-2-t: #fdece4;
-  --cat-3: #1baf7a; --cat-3-t: #e4f6ef;
-  --cat-4: #c98500; --cat-4-t: #fbf0da;
-  --cat-5: #d95f8f; --cat-5-t: #fbe9f0;
-  --cat-6: #008300; --cat-6-t: #e2f2e2;
+  --brand-navy: #0b2e59;
+  --brand-blue: #124e96;
+  --brand-blue-strong: #1f6fd1;
+  --brand-blue-soft: #eaf2fc;
+  --brand-orange: #ff7a1a;
+  --brand-orange-dark: #e65f00;
+  --brand-orange-soft: #fff1e7;
+
+  --surface: #ffffff;
+  --surface-soft: #f5f8fc;
+  --surface-subtle: #f8fafc;
+  --border: #dce5ef;
+  --border-strong: #c7d5e5;
+  --text: #13233a;
+  --text-secondary: #43566f;
+  --text-muted: #6d7b8f;
+
+  --success: #15803d;
+  --success-soft: #eefbf3;
+  --warning: #d97706;
+  --warning-soft: #fff8e8;
+  --danger: #dc2626;
+  --danger-soft: #fff1f1;
+
+  --shadow-card: 0 10px 30px rgba(11, 46, 89, 0.055);
+  --shadow-card-hover: 0 14px 38px rgba(11, 46, 89, 0.09);
+
+  --cat-1: #124e96; --cat-1-t: #e8f1fb;
+  --cat-2: #f97316; --cat-2-t: #fff0e5;
+  --cat-3: #2a78d6; --cat-3-t: #eaf3fd;
+  --cat-4: #fb923c; --cat-4-t: #fff3e8;
+  --cat-5: #60a5fa; --cat-5-t: #eef6ff;
+  --cat-6: #c2410c; --cat-6-t: #fff0e9;
 }
 
+* { box-sizing: border-box; }
+html { background: var(--surface-soft); }
 body {
-  font-family: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  margin: 0;
+  min-width: 1024px;
+  font-family: "Manrope", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: var(--text);
+  background: var(--surface-soft);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+button, a, input, select {
+  transition: border-color 160ms ease, background-color 160ms ease, color 160ms ease, box-shadow 160ms ease, transform 160ms ease, opacity 160ms ease;
+}
+
+button:not(:disabled) { cursor: pointer; }
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible {
+  outline: 3px solid rgba(31, 111, 209, 0.18);
+  outline-offset: 2px;
+}
+input:focus, select:focus {
+  border-color: var(--brand-blue-strong) !important;
+  box-shadow: 0 0 0 3px rgba(31, 111, 209, 0.08);
+}
+::selection { background: rgba(255, 122, 26, 0.22); }
+
+/* Superficies reutilizables */
+.fa-card {
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+.fa-card-interactive:hover {
+  transform: translateY(-1px);
+  border-color: #cad9e9;
+  box-shadow: var(--shadow-card-hover);
+}
+.fa-toolbar {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: 0 6px 20px rgba(11, 46, 89, 0.035);
+}
+
+/* Tablas: lectura rápida y menos ruido visual */
+.fa-table-wrap {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+.fa-table-wrap table { width: 100%; border-collapse: collapse; }
+.fa-table-wrap thead { background: #f6f9fc; }
+.fa-table-wrap thead th {
+  border-bottom: 1px solid var(--border);
+  color: var(--text-muted);
+}
+.fa-table-wrap tbody tr { transition: background-color 140ms ease; }
+.fa-table-wrap tbody tr:hover { background: #f8fbff; }
+.fa-table-wrap tbody tr + tr { border-top: 1px solid #edf2f7; }
+
+/* Tooltips de Recharts */
+.recharts-default-tooltip {
+  border: 1px solid var(--border) !important;
+  border-radius: 12px !important;
+  background: rgba(255,255,255,.98) !important;
+  box-shadow: 0 14px 32px rgba(11,46,89,.12) !important;
+  font-family: "Manrope", sans-serif !important;
+  font-size: 12px !important;
+}
+.recharts-tooltip-label { color: var(--text) !important; font-weight: 800 !important; }
+
+/* Skeleton */
+@keyframes fa-pulse { 0%,100% { opacity: .52; } 50% { opacity: 1; } }
+.fa-skeleton {
+  background: linear-gradient(90deg, #edf2f7 25%, #f7f9fc 50%, #edf2f7 75%);
+  background-size: 200% 100%;
+  animation: fa-pulse 1.25s ease-in-out infinite;
 }

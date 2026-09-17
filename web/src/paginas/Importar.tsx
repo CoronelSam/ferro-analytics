@@ -41,13 +41,13 @@ export function Importar() {
       <Cabecera titulo="Importar datos" subtitulo="Sube categorías, productos o movimientos desde el sistema de inventario." />
 
       <div className="px-8 py-7">
-        <div className="mb-5 flex w-fit gap-0.5 rounded-[9px] bg-neutral-100 p-[3px]">
+        <div className="mb-5 flex w-fit gap-0.5 rounded-[9px] bg-[#EDF3F9] p-[3px]">
           {PESTANAS.map((p) => (
             <button
               key={p.valor}
               onClick={() => setOrigen(p.valor)}
               className={`rounded-[7px] px-4 py-2 text-[12.5px] font-bold ${
-                origen === p.valor ? 'bg-white text-neutral-900 shadow-sm' : 'text-neutral-500'
+                origen === p.valor ? 'bg-white text-[#13233A] shadow-sm' : 'text-[#6D7B8F]'
               }`}
             >
               {p.etiqueta}
@@ -89,8 +89,8 @@ function ImportarCSV({ onResultado }: { onResultado: (r: ResultadoImportacion) =
   }
 
   return (
-    <form onSubmit={alEnviar} className="rounded-[14px] border border-neutral-200 bg-white p-6">
-      <div className="mb-2.5 text-xs font-extrabold uppercase tracking-wide text-neutral-500">Tipo de archivo</div>
+    <form onSubmit={alEnviar} className="fa-card p-6">
+      <div className="mb-2.5 text-xs font-extrabold uppercase tracking-wide text-[#6D7B8F]">Tipo de archivo</div>
       <div className="mb-5 flex gap-2">
         {ENTIDADES_CSV.map((e) => (
           <button
@@ -98,7 +98,7 @@ function ImportarCSV({ onResultado }: { onResultado: (r: ResultadoImportacion) =
             type="button"
             onClick={() => setEntidad(e.valor)}
             className={`flex-1 rounded-[9px] border px-3 py-2.5 font-mono text-xs font-extrabold ${
-              entidad === e.valor ? 'border-neutral-900 bg-neutral-900 text-white' : 'border-neutral-200 bg-white text-neutral-700'
+              entidad === e.valor ? 'border-[#124E96] bg-[#124E96] text-white' : 'border-[#DCE5EF] bg-white text-[#3E536C]'
             }`}
           >
             {e.etiqueta}
@@ -115,14 +115,14 @@ function ImportarCSV({ onResultado }: { onResultado: (r: ResultadoImportacion) =
         onDrop={alSoltar}
         onClick={() => inputRef.current?.click()}
         className={`flex cursor-pointer flex-col items-center gap-2.5 rounded-xl border-[1.5px] border-dashed px-5 py-9 text-center ${
-          arrastrando ? 'border-neutral-500 bg-neutral-100' : 'border-neutral-300 bg-neutral-50'
+          arrastrando ? 'border-neutral-500 bg-[#EDF3F9]' : 'border-[#C9D7E6] bg-[#F5F8FC]'
         }`}
       >
-        <IconoNube size={40} className="text-neutral-400" />
-        <div className="text-[13.5px] font-bold text-neutral-800">
+        <IconoNube size={40} className="text-[#8A98AA]" />
+        <div className="text-[13.5px] font-bold text-[#243B55]">
           {archivo ? archivo.name : 'Arrastra tu CSV aquí'}
         </div>
-        <div className="text-xs font-semibold text-neutral-500">
+        <div className="text-xs font-semibold text-[#6D7B8F]">
           {archivo ? 'Haz clic para cambiar de archivo' : 'o haz clic para seleccionar · formato .csv'}
         </div>
         <input
@@ -155,8 +155,8 @@ function ImportarBD({ onResultado }: { onResultado: (r: ResultadoImportacion) =>
   }
 
   return (
-    <div className="rounded-[14px] border border-neutral-200 bg-white p-6">
-      <div className="mb-2.5 text-xs font-extrabold uppercase tracking-wide text-neutral-500">Tipo de dato</div>
+    <div className="fa-card p-6">
+      <div className="mb-2.5 text-xs font-extrabold uppercase tracking-wide text-[#6D7B8F]">Tipo de dato</div>
       <div className="mb-5 flex gap-2">
         {ENTIDADES_BD.map((e) => (
           <button
@@ -164,7 +164,7 @@ function ImportarBD({ onResultado }: { onResultado: (r: ResultadoImportacion) =>
             type="button"
             onClick={() => setEntidad(e.valor)}
             className={`flex-1 rounded-[9px] border px-3 py-2.5 text-xs font-extrabold ${
-              entidad === e.valor ? 'border-neutral-900 bg-neutral-900 text-white' : 'border-neutral-200 bg-white text-neutral-700'
+              entidad === e.valor ? 'border-[#124E96] bg-[#124E96] text-white' : 'border-[#DCE5EF] bg-white text-[#3E536C]'
             }`}
           >
             {e.etiqueta}
@@ -173,21 +173,21 @@ function ImportarBD({ onResultado }: { onResultado: (r: ResultadoImportacion) =>
       </div>
 
       {estado.isLoading ? (
-        <p className="text-sm font-semibold text-neutral-400">Comprobando conexión...</p>
+        <p className="text-sm font-semibold text-[#8A98AA]">Comprobando conexión...</p>
       ) : !estado.data?.disponible ? (
-        <div className="flex flex-col items-center gap-2.5 rounded-xl border-[1.5px] border-dashed border-neutral-300 bg-neutral-50 px-5 py-9 text-center">
-          <IconoAlerta size={28} className="text-neutral-400" />
-          <div className="text-[13.5px] font-bold text-neutral-800">Sin base de datos configurada</div>
-          <div className="max-w-xs text-xs font-semibold text-neutral-500">
+        <div className="flex flex-col items-center gap-2.5 rounded-xl border-[1.5px] border-dashed border-[#C9D7E6] bg-[#F5F8FC] px-5 py-9 text-center">
+          <IconoAlerta size={28} className="text-[#8A98AA]" />
+          <div className="text-[13.5px] font-bold text-[#243B55]">Sin base de datos configurada</div>
+          <div className="max-w-xs text-xs font-semibold text-[#6D7B8F]">
             {estado.data?.detalle ?? 'Defina FERRO_BD_URL en el servidor de la API (Postgres o MySQL) para habilitar la sincronización.'}
           </div>
         </div>
       ) : (
-        <div className="flex flex-col items-center gap-2 rounded-xl border-[1.5px] border-neutral-200 bg-neutral-50 px-5 py-9 text-center">
+        <div className="flex flex-col items-center gap-2 rounded-xl border-[1.5px] border-[#DCE5EF] bg-[#F5F8FC] px-5 py-9 text-center">
           <div className="flex items-center gap-1.5 text-xs font-extrabold text-emerald-700">
             <IconoCheck size={14} /> Conectado a {estado.data.motor}
           </div>
-          <div className="max-w-xs text-xs font-semibold text-neutral-500">
+          <div className="max-w-xs text-xs font-semibold text-[#6D7B8F]">
             Trae {ENTIDADES_BD.find((e) => e.valor === entidad)?.etiqueta.toLowerCase()} directamente de la base de
             datos. Los movimientos se sincronizan de forma incremental: solo los posteriores al último ya importado.
           </div>
@@ -207,25 +207,25 @@ function ImportarBD({ onResultado }: { onResultado: (r: ResultadoImportacion) =>
 
 function PanelResultado({ resultado }: { resultado: ResultadoImportacion | null }) {
   return (
-    <div className="rounded-[14px] border border-neutral-200 bg-white p-6">
+    <div className="fa-card p-6">
       {!resultado ? (
-        <p className="text-sm font-semibold text-neutral-400">El resultado de la importación aparecerá aquí.</p>
+        <p className="text-sm font-semibold text-[#8A98AA]">El resultado de la importación aparecerá aquí.</p>
       ) : (
         <>
           <div className="mb-1 flex items-center gap-2.5">
             <IconoCheck size={18} className="text-emerald-700" />
-            <span className="text-[14.5px] font-extrabold text-neutral-900">
+            <span className="text-[14.5px] font-extrabold text-[#13233A]">
               {resultado.aceptados} registro(s) de {resultado.entidad} aceptados
             </span>
           </div>
           {resultado.insertados !== null && (
-            <div className="mb-4 ml-7 text-xs font-semibold text-neutral-500">
+            <div className="mb-4 ml-7 text-xs font-semibold text-[#6D7B8F]">
               Insertados: {resultado.insertados} · Actualizados: {resultado.actualizados}
             </div>
           )}
           {resultado.lote && (
-            <div className="mb-4 ml-7 text-xs font-semibold text-neutral-500">
-              Lote: <span className="font-mono text-neutral-700">{resultado.lote}</span> · para deshacerlo, pestaña
+            <div className="mb-4 ml-7 text-xs font-semibold text-[#6D7B8F]">
+              Lote: <span className="font-mono text-[#3E536C]">{resultado.lote}</span> · para deshacerlo, pestaña
               "Deshacer"
             </div>
           )}
@@ -233,17 +233,17 @@ function PanelResultado({ resultado }: { resultado: ResultadoImportacion | null 
             <>
               <div className="mb-1 flex items-center gap-2">
                 <IconoAlerta size={16} className="text-amber-700" />
-                <span className="text-[13px] font-extrabold text-neutral-900">
+                <span className="text-[13px] font-extrabold text-[#13233A]">
                   {resultado.rechazados.length} fila(s) rechazada(s)
                 </span>
               </div>
               <div>
                 {resultado.rechazados.map((r) => (
-                  <div key={r.fila} className="flex gap-2.5 border-b border-neutral-100 py-2.5 last:border-0">
+                  <div key={r.fila} className="flex gap-2.5 border-b border-[#EDF2F7] py-2.5 last:border-0">
                     <IconoAlerta size={15} className="mt-0.5 flex-shrink-0 text-amber-700" />
                     <div>
-                      <div className="text-[12.5px] font-bold text-neutral-800">Fila {r.fila}</div>
-                      <div className="text-xs font-medium text-neutral-500">{r.motivo}</div>
+                      <div className="text-[12.5px] font-bold text-[#243B55]">Fila {r.fila}</div>
+                      <div className="text-xs font-medium text-[#6D7B8F]">{r.motivo}</div>
                     </div>
                   </div>
                 ))}
@@ -271,10 +271,10 @@ function DeshacerLotes() {
   }
 
   return (
-    <div className="overflow-hidden rounded-[14px] border border-neutral-200 bg-white">
-      <div className="border-b border-neutral-100 px-6 py-4">
-        <h2 className="text-sm font-extrabold text-neutral-900">Deshacer una importación de movimientos</h2>
-        <p className="text-xs font-semibold text-neutral-500">
+    <div className="fa-table-wrap">
+      <div className="border-b border-[#EDF2F7] px-6 py-4">
+        <h2 className="text-sm font-extrabold text-[#13233A]">Deshacer una importación de movimientos</h2>
+        <p className="text-xs font-semibold text-[#6D7B8F]">
           Elimina todos los movimientos de un lote (CSV o base de datos). No afecta a categorías ni productos.
         </p>
       </div>
@@ -286,7 +286,7 @@ function DeshacerLotes() {
         mensajeVacio="No hay ninguna importación de movimientos identificada por lote."
       >
         <table className="w-full text-sm">
-          <thead className="bg-neutral-50 text-left text-[10.5px] font-extrabold uppercase tracking-wide text-neutral-500">
+          <thead className="bg-[#F5F8FC] text-left text-[10.5px] font-extrabold uppercase tracking-wide text-[#6D7B8F]">
             <tr>
               <th className="px-5 py-2.5">Lote</th>
               <th className="px-5 py-2.5 text-right">Cantidad</th>
@@ -298,10 +298,10 @@ function DeshacerLotes() {
           <tbody className="divide-y divide-neutral-100">
             {lotes.data?.map((l) => (
               <tr key={l.lote}>
-                <td className="px-5 py-3 font-mono text-xs font-bold text-neutral-700">{l.lote}</td>
-                <td className="px-5 py-3 text-right text-[13px] font-bold text-neutral-900">{l.cantidad}</td>
-                <td className="px-5 py-3 text-[12.5px] font-semibold text-neutral-500">{l.fecha_desde}</td>
-                <td className="px-5 py-3 text-[12.5px] font-semibold text-neutral-500">{l.fecha_hasta}</td>
+                <td className="px-5 py-3 font-mono text-xs font-bold text-[#3E536C]">{l.lote}</td>
+                <td className="px-5 py-3 text-right text-[13px] font-bold text-[#13233A]">{l.cantidad}</td>
+                <td className="px-5 py-3 text-[12.5px] font-semibold text-[#6D7B8F]">{l.fecha_desde}</td>
+                <td className="px-5 py-3 text-[12.5px] font-semibold text-[#6D7B8F]">{l.fecha_hasta}</td>
                 <td className="px-5 py-3 text-right">
                   <button
                     onClick={() => deshacer(l)}

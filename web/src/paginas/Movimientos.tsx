@@ -43,14 +43,14 @@ export function Movimientos() {
       </Cabecera>
 
       <div className="flex flex-col gap-5 px-8 py-7">
-        <div className="flex flex-wrap items-end justify-between gap-4 rounded-[14px] border border-neutral-200 bg-white px-6 py-5">
+        <div className="flex flex-wrap items-end justify-between gap-4 fa-card px-6 py-5">
           <div className="flex items-end gap-4">
             <Campo etiqueta="Desde">
               <input
                 type="date"
                 value={fechaDesde}
                 onChange={(e) => setFechaDesde(e.target.value)}
-                className="w-[150px] rounded-[9px] border border-neutral-200 px-3 py-2 text-[13px] font-bold text-neutral-800"
+                className="w-[150px] rounded-[9px] border border-[#DCE5EF] px-3 py-2 text-[13px] font-bold text-[#243B55]"
               />
             </Campo>
             <Campo etiqueta="Hasta">
@@ -58,17 +58,17 @@ export function Movimientos() {
                 type="date"
                 value={fechaHasta}
                 onChange={(e) => setFechaHasta(e.target.value)}
-                className="w-[150px] rounded-[9px] border border-neutral-200 px-3 py-2 text-[13px] font-bold text-neutral-800"
+                className="w-[150px] rounded-[9px] border border-[#DCE5EF] px-3 py-2 text-[13px] font-bold text-[#243B55]"
               />
             </Campo>
             <Campo etiqueta="Tipo">
-              <div className="flex gap-0.5 rounded-[9px] bg-neutral-100 p-[3px]">
+              <div className="flex gap-0.5 rounded-[9px] bg-[#EDF3F9] p-[3px]">
                 {OPCIONES_TIPO.map((o) => (
                   <button
                     key={o.valor}
                     onClick={() => setTipo(o.valor)}
                     className={`rounded-[7px] px-3.5 py-2 text-[12.5px] font-bold ${
-                      tipo === o.valor ? 'bg-white text-neutral-900 shadow-sm' : 'text-neutral-500'
+                      tipo === o.valor ? 'bg-white text-[#13233A] shadow-sm' : 'text-[#6D7B8F]'
                     }`}
                   >
                     {o.etiqueta}
@@ -93,9 +93,9 @@ export function Movimientos() {
           vacio={movimientos.data?.length === 0}
           mensajeVacio="Sin movimientos para el filtro seleccionado."
         >
-          <div className="overflow-hidden rounded-[14px] border border-neutral-200 bg-white">
+          <div className="fa-table-wrap">
             <table className="w-full text-sm">
-              <thead className="bg-neutral-50 text-left text-[10.5px] font-extrabold uppercase tracking-wide text-neutral-500">
+              <thead className="bg-[#F5F8FC] text-left text-[10.5px] font-extrabold uppercase tracking-wide text-[#6D7B8F]">
                 <tr>
                   <th className="px-4 py-2.5">ID</th>
                   <th className="px-4 py-2.5">Producto</th>
@@ -107,8 +107,8 @@ export function Movimientos() {
               <tbody className="divide-y divide-neutral-100">
                 {movimientos.data?.map((m) => (
                   <tr key={m.id_movimiento}>
-                    <td className="px-4 py-3 text-[12.5px] font-semibold text-neutral-500">{m.id_movimiento}</td>
-                    <td className="px-4 py-3 font-mono text-xs font-bold text-neutral-800">{m.codigo_producto}</td>
+                    <td className="px-4 py-3 text-[12.5px] font-semibold text-[#6D7B8F]">{m.id_movimiento}</td>
+                    <td className="px-4 py-3 font-mono text-xs font-bold text-[#243B55]">{m.codigo_producto}</td>
                     <td className="px-4 py-3">
                       <span
                         className={`rounded-full px-2.5 py-1 text-xs font-extrabold ${
@@ -118,8 +118,8 @@ export function Movimientos() {
                         {m.tipo === 'E' ? 'Entrada' : 'Salida'}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-right text-[13px] font-bold text-neutral-900">{m.cantidad}</td>
-                    <td className="px-4 py-3 text-[12.5px] font-semibold text-neutral-500">{m.fecha}</td>
+                    <td className="px-4 py-3 text-right text-[13px] font-bold text-[#13233A]">{m.cantidad}</td>
+                    <td className="px-4 py-3 text-[12.5px] font-semibold text-[#6D7B8F]">{m.fecha}</td>
                   </tr>
                 ))}
               </tbody>
@@ -134,17 +134,17 @@ export function Movimientos() {
 function Campo({ etiqueta, children }: { etiqueta: string; children: ReactNode }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <span className="text-[11px] font-extrabold uppercase tracking-wide text-neutral-500">{etiqueta}</span>
+      <span className="text-[11px] font-extrabold uppercase tracking-wide text-[#6D7B8F]">{etiqueta}</span>
       {children}
     </div>
   )
 }
 
-function Chip({ etiqueta, valor, color = 'text-neutral-800' }: { etiqueta: string; valor: string; color?: string }) {
+function Chip({ etiqueta, valor, color = 'text-[#243B55]' }: { etiqueta: string; valor: string; color?: string }) {
   return (
-    <div className="flex items-baseline gap-1.5 rounded-[9px] border border-neutral-200 bg-neutral-50 px-3.5 py-2">
+    <div className="flex items-baseline gap-1.5 rounded-[9px] border border-[#DCE5EF] bg-[#F5F8FC] px-3.5 py-2">
       <span className={`text-sm font-extrabold ${color}`}>{valor}</span>
-      <span className="text-[11.5px] font-bold text-neutral-500">{etiqueta}</span>
+      <span className="text-[11.5px] font-bold text-[#6D7B8F]">{etiqueta}</span>
     </div>
   )
 }

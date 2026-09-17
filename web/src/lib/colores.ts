@@ -1,6 +1,5 @@
-// Paleta categórica fija (6 tonos, orden fijo — nunca reasignada por ranking).
-// Cada categoría recibe su slot según el resto de su id entre 6, así el color
-// de "Tornillería" es siempre el mismo sin importar qué filtro esté activo.
+// Paleta categórica fija alineada con la identidad FerroAnalytics.
+// Alterna variaciones de azul y naranja sin reasignar colores por ranking.
 
 export const SLOTS = ["cat-1", "cat-2", "cat-3", "cat-4", "cat-5", "cat-6"] as const
 
@@ -9,15 +8,13 @@ export function slotCategoria(idCategoria: number): string {
   return SLOTS[i]
 }
 
-// Mismos tonos que las variables CSS --cat-N, en hex plano para librerías
-// de gráficos (SVG) que no resuelven custom properties de forma fiable.
 const HEX: Record<string, string> = {
-  'cat-1': '#2a78d6',
-  'cat-2': '#eb6834',
-  'cat-3': '#1baf7a',
-  'cat-4': '#c98500',
-  'cat-5': '#d95f8f',
-  'cat-6': '#008300',
+  'cat-1': '#124E96',
+  'cat-2': '#F97316',
+  'cat-3': '#2A78D6',
+  'cat-4': '#FB923C',
+  'cat-5': '#60A5FA',
+  'cat-6': '#C2410C',
 }
 
 export function hexCategoria(idCategoria: number): string {

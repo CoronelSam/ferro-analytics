@@ -25,34 +25,39 @@ export function Layout() {
   const numAlertas = alertas.data?.length ?? 0
 
   return (
-    <div className="flex min-h-screen bg-neutral-50">
-      <aside className="flex w-[260px] flex-shrink-0 flex-col border-r border-neutral-200 bg-white p-3.5">
-        <div className="flex items-center gap-2.5 px-2 pb-5 pt-1">
-          <div className="flex h-8 w-8 items-center justify-center rounded-[9px] bg-neutral-900 text-[15px] font-extrabold text-white">
-            F
-          </div>
-          <div className="flex flex-col leading-tight">
-            <span className="text-sm font-extrabold text-neutral-900">FerroAnalytics</span>
-            <span className="text-[11px] font-semibold text-neutral-500">Analítica de inventario</span>
-          </div>
+    <div className="flex min-h-screen bg-[#F5F8FC]">
+      <aside className="flex w-[272px] flex-shrink-0 flex-col border-r border-[#DCE5EF] bg-white px-4 py-4 shadow-[6px_0_24px_rgba(11,46,89,0.035)]">
+        <div className="mb-5 border-b border-[#E5ECF4] px-1 pb-5 pt-1">
+          <img
+            src="/ferroanalytics-logo.png"
+            alt="FerroAnalytics"
+            className="h-auto w-[205px] object-contain object-left"
+          />
+          <p className="mt-1 pl-1 text-[11px] font-bold tracking-[0.02em] text-[#6D7B8F]">
+            Inventario y analítica inteligente
+          </p>
         </div>
 
-        <nav className="flex flex-col gap-0.5">
+        <nav className="flex flex-col gap-1">
           {ENLACES.map(({ ruta, etiqueta, Icono }) => (
             <NavLink
               key={ruta}
               to={ruta}
               end={ruta === '/'}
               className={({ isActive }) =>
-                `flex items-center gap-2.5 rounded-[9px] px-2.5 py-2.5 text-[13.5px] font-bold transition-colors ${
-                  isActive ? 'bg-neutral-900 text-white' : 'text-neutral-600 hover:bg-neutral-100'
+                `group flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13.5px] font-bold transition-all ${
+                  isActive
+                    ? 'bg-[#124E96] text-white shadow-[0_8px_18px_rgba(18,78,150,0.18)]'
+                    : 'text-[#53647A] hover:bg-[#EAF2FC] hover:text-[#124E96]'
                 }`
               }
             >
-              <Icono size={19} />
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-current/0">
+                <Icono size={19} />
+              </span>
               <span className="flex-1">{etiqueta}</span>
               {etiqueta === 'Alertas' && numAlertas > 0 && (
-                <span className="rounded-full bg-red-600 px-1.5 py-0.5 text-[11px] font-bold leading-none text-white">
+                <span className="rounded-full bg-[#FF7A1A] px-2 py-1 text-[10.5px] font-extrabold leading-none text-white shadow-sm">
                   {numAlertas}
                 </span>
               )}
@@ -60,8 +65,11 @@ export function Layout() {
           ))}
         </nav>
 
-        <div className="mt-auto border-t border-neutral-200 px-2.5 pb-1 pt-3.5">
-          <span className="text-[10.5px] font-bold tracking-wide text-neutral-400">FASE II · API + WEB</span>
+        <div className="mt-auto rounded-xl border border-[#FFE0CC] bg-[#FFF7F1] px-3 py-3">
+          <p className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#E65F00]">FerroAnalytics</p>
+          <p className="mt-1 text-[11px] font-semibold leading-relaxed text-[#6D7B8F]">
+            Control visual, análisis y seguimiento del inventario.
+          </p>
         </div>
       </aside>
 
