@@ -70,3 +70,21 @@ async def exigir_usuario_para_mutaciones(
             detail="Esta acción requiere iniciar sesión.",
         )
     _usuario_desde_token(authorization.removeprefix("Bearer "))
+
+
+async def exigir_admin(authorization: str | None = Header(default=None)) -> dict:
+    """
+    Dependency para rutas que solo puede ejecutar un usuario con rol
+    "admin" (ver api/usuarios.py), además de la sesión que ya exige
+    exigir_usuario_para_mutaciones para cualquier mutación. Devuelve
+    {usuario, nombre, rol} del usuario autenticado.
+
+    Lanza 401 si no hay sesión (mismo caso que exigir_usuario_para_mutaciones)
+    y 403 si la sesión es válida pero el rol no es "admin".
+    """
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Esta acción requiere iniciar sesión.")
+    usuario = _usuario_desde_token(authorization.removeprefix("Bearer "))
+    if usuario["rol"] != "admin":
+        raise HTTPException(status_code=403, detail="Esta acción requiere permisos de administrador.")
+    return usuario

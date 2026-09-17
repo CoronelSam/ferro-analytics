@@ -10,6 +10,7 @@ import {
   useImportarDesdeBD,
   useLotesMovimientos,
 } from '../lib/consultas'
+import { useSesion } from '../lib/sesion'
 import type { EntidadImportable, LoteMovimientos, ResultadoImportacion } from '../lib/tipos'
 
 const ENTIDADES_CSV: { valor: EntidadImportable; etiqueta: string }[] = [
@@ -33,8 +34,11 @@ const PESTANAS: { valor: Origen; etiqueta: string }[] = [
 ]
 
 export function Importar() {
+  const esAdmin = useSesion()?.rol === 'admin'
   const [origen, setOrigen] = useState<Origen>('csv')
   const [resultado, setResultado] = useState<ResultadoImportacion | null>(null)
+
+  const pestanas = esAdmin ? PESTANAS : PESTANAS.filter((p) => p.valor !== 'deshacer')
 
   return (
     <div className="flex flex-col">
@@ -42,7 +46,7 @@ export function Importar() {
 
       <div className="px-8 py-7">
         <div className="mb-5 flex w-fit gap-0.5 rounded-[9px] bg-[#EDF3F9] p-[3px]">
-          {PESTANAS.map((p) => (
+          {pestanas.map((p) => (
             <button
               key={p.valor}
               onClick={() => setOrigen(p.valor)}
@@ -55,7 +59,7 @@ export function Importar() {
           ))}
         </div>
 
-        {origen === 'deshacer' ? (
+        {origen === 'deshacer' && esAdmin ? (
           <DeshacerLotes />
         ) : (
           <div className="grid grid-cols-2 gap-5">
@@ -218,6 +222,8 @@ function ImportarBD({
 }
 
 function PanelResultado({ resultado }: { resultado: ResultadoImportacion | null }) {
+  const esAdmin = useSesion()?.rol === 'admin'
+
   return (
     <div className="fa-card p-6">
       {!resultado ? (
@@ -237,8 +243,8 @@ function PanelResultado({ resultado }: { resultado: ResultadoImportacion | null 
           )}
           {resultado.lote && (
             <div className="mb-4 ml-7 text-xs font-semibold text-[#6D7B8F]">
-              Lote: <span className="font-mono text-[#3E536C]">{resultado.lote}</span> · para deshacerlo, pestaña
-              "Deshacer"
+              Lote: <span className="font-mono text-[#3E536C]">{resultado.lote}</span>
+              {esAdmin && ' · para deshacerlo, pestaña "Deshacer"'}
             </div>
           )}
           {resultado.rechazados.length > 0 && (

@@ -141,35 +141,42 @@ def test_movimientos_tipo_invalido_devuelve_400(cliente):
     assert respuesta.status_code == 400
 
 
-def test_lotes_y_deshacer_lote_movimientos(cliente):
-    subir_csv(cliente, "categorias", "categorias.csv", csv_categorias([(1, "Herramientas")]))
+def test_lotes_y_deshacer_lote_movimientos(cliente_admin):
+    subir_csv(cliente_admin, "categorias", "categorias.csv", csv_categorias([(1, "Herramientas")]))
     subir_csv(
-        cliente, "productos", "productos.csv",
+        cliente_admin, "productos", "productos.csv",
         csv_productos([("P0001", "Martillo", 1, 250.0, 40, 5)]),
     )
-    subir_csv(cliente, "movimientos", "movimientos.csv", csv_movimientos([
+    subir_csv(cliente_admin, "movimientos", "movimientos.csv", csv_movimientos([
         (1, "P0001", "S", 5, "2024-01-10"),
         (2, "P0001", "S", 3, "2024-01-15"),
     ]))
 
-    lotes = cliente.get("/api/movimientos/lotes").json()
+    lotes = cliente_admin.get("/api/movimientos/lotes").json()
     assert len(lotes) == 1
     assert lotes[0]["cantidad"] == 2
     lote = lotes[0]["lote"]
 
-    respuesta = cliente.delete(f"/api/movimientos/lotes/{quote(lote, safe='')}")
+    respuesta = cliente_admin.delete(f"/api/movimientos/lotes/{quote(lote, safe='')}")
 
     assert respuesta.status_code == 200
     assert respuesta.json()["eliminados"] == 2
-    assert cliente.get("/api/movimientos").json() == []
-    assert cliente.get("/api/movimientos/lotes").json() == []
+    assert cliente_admin.get("/api/movimientos").json() == []
+    assert cliente_admin.get("/api/movimientos/lotes").json() == []
 
 
-def test_deshacer_lote_inexistente_no_elimina_nada(cliente):
-    respuesta = cliente.delete("/api/movimientos/lotes/lote-que-no-existe")
+def test_deshacer_lote_inexistente_no_elimina_nada(cliente_admin):
+    respuesta = cliente_admin.delete("/api/movimientos/lotes/lote-que-no-existe")
 
     assert respuesta.status_code == 200
     assert respuesta.json() == {"lote": "lote-que-no-existe", "eliminados": 0}
+
+
+def test_deshacer_lote_sin_rol_admin_devuelve_403(cliente):
+    """El rol por defecto ("usuario") puede importar, pero no deshacer un lote: esa acción exige rol "admin"."""
+    respuesta = cliente.delete("/api/movimientos/lotes/lote-que-no-existe")
+
+    assert respuesta.status_code == 403
 
 
 def test_importar_bd_estado_sin_ferro_bd_url(cliente, monkeypatch):

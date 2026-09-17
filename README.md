@@ -116,7 +116,7 @@ pnpm --dir web run dev
 
 La documentación interactiva de la API queda en http://127.0.0.1:8000/docs. Los errores propios de FerroAnalytics (CSV inválido, binario corrupto, datos insuficientes para predecir) responden con el código HTTP correspondiente y `{"detail": "..."}`, y además quedan registrados en `data/logs/ferroanalytics.log`.
 
-El dashboard exige iniciar sesión: las lecturas (GET) quedan abiertas en la API, pero toda mutación (importar, sincronizar, deshacer un lote) exige el token que entrega el login. Crea el primer usuario desde la terminal:
+El dashboard exige iniciar sesión: las lecturas (GET) quedan abiertas en la API, pero toda mutación (importar, sincronizar) exige el token que entrega el login, y deshacer un lote de movimientos exige además rol `admin` (destructivo e irreversible; con rol `usuario` la pestaña "Deshacer" ni siquiera aparece). Crea el primer usuario desde la terminal:
 
 ```bash
 python scripts/crear_usuario.py admin "Administradora" --rol admin

@@ -7,13 +7,14 @@ negocio vive en src/ (mismo principio que src/menu.py para la consola).
 import os
 import tempfile
 
-from fastapi import APIRouter, HTTPException, Query, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile
 
 from src import almacenamiento as alm
 from src import importador as imp
 from src import importador_bd as imp_bd
 from src.excepciones import ErrorImportacion
 from api import datos
+from api.auth import exigir_admin
 
 router = APIRouter(prefix="/api", tags=["inventario"])
 
@@ -187,11 +188,12 @@ def obtener_lotes_movimientos():
 
 
 @router.delete("/movimientos/lotes/{lote}")
-def deshacer_lote_movimientos(lote: str):
+def deshacer_lote_movimientos(lote: str, _usuario: dict = Depends(exigir_admin)):
     """
     Elimina todos los movimientos de `lote` (ver /movimientos/lotes) y
     reconstruye los índices de movimientos. Operación destructiva e
-    irreversible: no afecta a categorías ni productos.
+    irreversible: no afecta a categorías ni productos. Solo un usuario con
+    rol "admin" puede dispararla (ver api/auth.py:exigir_admin).
     """
     eliminados = alm.eliminar_movimientos_por_lote(lote)
     if eliminados:
