@@ -1,6 +1,6 @@
-import { useRef, useState, type DragEvent, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type DragEvent, type FormEvent } from 'react'
 import { Cabecera } from '../componentes/Cabecera'
-import { BotonPrimario } from '../componentes/Boton'
+import { BotonFantasma, BotonPrimario } from '../componentes/Boton'
 import { Estado } from '../componentes/Estado'
 import { IconoAlerta, IconoCheck, IconoNube } from '../componentes/Icono'
 import {
@@ -272,12 +272,12 @@ function DeshacerLotes() {
   const lotes = useLotesMovimientos()
   const mutacion = useDeshacerLoteMovimientos()
   const [loteEnProceso, setLoteEnProceso] = useState<string | null>(null)
+  const [loteAConfirmar, setLoteAConfirmar] = useState<LoteMovimientos | null>(null)
 
-  function deshacer(lote: LoteMovimientos) {
-    const confirmado = window.confirm(
-      `¿Eliminar ${lote.cantidad} movimiento(s) del lote "${lote.lote}"?\n\nEsta acción no se puede deshacer.`,
-    )
-    if (!confirmado) return
+  function confirmarDeshacer() {
+    if (!loteAConfirmar) return
+    const lote = loteAConfirmar
+    setLoteAConfirmar(null)
     setLoteEnProceso(lote.lote)
     mutacion.mutate(lote.lote, { onSettled: () => setLoteEnProceso(null) })
   }
@@ -316,7 +316,7 @@ function DeshacerLotes() {
                 <td className="px-5 py-3 text-[12.5px] font-semibold text-[#6D7B8F]">{l.fecha_hasta}</td>
                 <td className="px-5 py-3 text-right">
                   <button
-                    onClick={() => deshacer(l)}
+                    onClick={() => setLoteAConfirmar(l)}
                     disabled={loteEnProceso === l.lote}
                     className="rounded-[7px] border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-extrabold text-red-700 disabled:opacity-40"
                   >
@@ -332,6 +332,86 @@ function DeshacerLotes() {
       {mutacion.isError && (
         <p className="px-6 pb-4 text-sm font-semibold text-red-600">Error: {mutacion.error.message}</p>
       )}
+
+      {loteAConfirmar && (
+        <ModalConfirmarDeshacer
+          lote={loteAConfirmar}
+          onCancelar={() => setLoteAConfirmar(null)}
+          onConfirmar={confirmarDeshacer}
+        />
+      )}
+    </div>
+  )
+}
+
+function ModalConfirmarDeshacer({
+  lote,
+  onCancelar,
+  onConfirmar,
+}: {
+  lote: LoteMovimientos
+  onCancelar: () => void
+  onConfirmar: () => void
+}) {
+  useEffect(() => {
+    function alTeclear(e: KeyboardEvent) {
+      if (e.key === 'Escape') onCancelar()
+    }
+    window.addEventListener('keydown', alTeclear)
+    return () => window.removeEventListener('keydown', alTeclear)
+  }, [onCancelar])
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[#0B1B2E]/45 px-4"
+      onClick={onCancelar}
+    >
+      <div
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="titulo-confirmar-deshacer"
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-md rounded-2xl bg-white p-6 shadow-[0_24px_60px_rgba(11,27,46,0.28)]"
+      >
+        <div className="mb-4 flex items-start gap-3">
+          <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600">
+            <IconoAlerta size={20} />
+          </span>
+          <div>
+            <h3 id="titulo-confirmar-deshacer" className="text-[15px] font-extrabold text-[#13233A]">
+              Eliminar lote de movimientos
+            </h3>
+            <p className="mt-0.5 text-xs font-semibold text-[#6D7B8F]">
+              Lote <span className="font-mono text-[#3E536C]">{lote.lote}</span> · {lote.fecha_desde} – {lote.fecha_hasta}
+            </p>
+          </div>
+        </div>
+
+        <div className="mb-5 flex flex-col gap-2.5 rounded-xl border border-red-100 bg-red-50/60 px-4 py-3.5 text-[12.5px] font-semibold leading-relaxed text-red-800">
+          <p>
+            Se eliminarán permanentemente <strong>{lote.cantidad} movimiento(s)</strong>. Esta acción no se puede
+            deshacer.
+          </p>
+          <p>
+            Los reportes y la analítica calculados a partir de movimientos (ventas mensuales, top inmovilizado,
+            clasificación ABC-XYZ, predicción de demanda) cambiarán al recalcularse sin estos datos.
+          </p>
+          <p className="text-red-700/80">
+            No afecta el stock actual ni los datos de productos o categorías: eso solo cambia al volver a
+            importarlos.
+          </p>
+        </div>
+
+        <div className="flex justify-end gap-2.5">
+          <BotonFantasma onClick={onCancelar}>Cancelar</BotonFantasma>
+          <button
+            onClick={onConfirmar}
+            className="flex items-center gap-1.5 whitespace-nowrap rounded-[10px] bg-red-600 px-4 py-2.5 text-[13.5px] font-extrabold text-white shadow-[0_6px_14px_rgba(220,38,38,0.25)] hover:bg-red-700 hover:-translate-y-px"
+          >
+            Eliminar lote
+          </button>
+        </div>
+      </div>
     </div>
   )
 }
