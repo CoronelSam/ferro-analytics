@@ -1,11 +1,13 @@
 import { useState, type FormEvent } from 'react'
 import { BotonPrimario } from '../componentes/Boton'
-import { IconoCandado } from '../componentes/Icono'
+import { IconoCandado, IconoOjo, IconoOjoCerrado } from '../componentes/Icono'
+import { ModoTema } from '../componentes/ModoTema'
 import { useIniciarSesion } from '../lib/consultas'
 
 export function Login() {
   const [usuario, setUsuario] = useState('')
   const [contrasena, setContrasena] = useState('')
+  const [mostrarContrasena, setMostrarContrasena] = useState(false)
   const mutacion = useIniciarSesion()
 
   function alEnviar(e: FormEvent) {
@@ -15,7 +17,10 @@ export function Login() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#F5F8FC] px-4">
+    <div className="relative flex min-h-screen items-center justify-center bg-[#F5F8FC] px-4">
+      <div className="absolute right-5 top-5">
+        <ModoTema compacto />
+      </div>
       <div className="w-full max-w-[380px]">
         <div className="mb-6 flex flex-col items-center gap-1">
           <img
@@ -51,13 +56,24 @@ export function Login() {
             <span className="mb-1.5 block text-[11px] font-extrabold uppercase tracking-wide text-[#6D7B8F]">
               Contraseña
             </span>
-            <input
-              type="password"
-              autoComplete="current-password"
-              value={contrasena}
-              onChange={(e) => setContrasena(e.target.value)}
-              className="w-full rounded-[9px] border border-[#DCE5EF] px-3 py-2.5 text-[13.5px] font-bold text-[#243B55]"
-            />
+            <div className="relative">
+              <input
+                type={mostrarContrasena ? 'text' : 'password'}
+                autoComplete="current-password"
+                value={contrasena}
+                onChange={(e) => setContrasena(e.target.value)}
+                className="w-full rounded-[9px] border border-[#DCE5EF] px-3 py-2.5 pr-11 text-[13.5px] font-bold text-[#243B55]"
+              />
+              <button
+                type="button"
+                onClick={() => setMostrarContrasena((valor) => !valor)}
+                aria-label={mostrarContrasena ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                title={mostrarContrasena ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                className="fa-password-toggle absolute right-1.5 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-[#6D7B8F]"
+              >
+                {mostrarContrasena ? <IconoOjoCerrado size={18} /> : <IconoOjo size={18} />}
+              </button>
+            </div>
           </label>
 
           {mutacion.isError && (

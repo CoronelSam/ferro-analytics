@@ -159,3 +159,24 @@ export function IconoNube({ size = 40, className }: Props) {
     </svg>
   )
 }
+
+
+export function IconoOjo({ size = 20, className }: Props) {
+  return (
+    <svg viewBox="0 0 20 20" width={size} height={size} className={className} {...base}>
+      <path d="M2.5 10s2.6-4.6 7.5-4.6 7.5 4.6 7.5 4.6-2.6 4.6-7.5 4.6S2.5 10 2.5 10Z" />
+      <circle cx="10" cy="10" r="2.2" />
+    </svg>
+  )
+}
+
+export function IconoOjoCerrado({ size = 20, className }: Props) {
+  return (
+    <svg viewBox="0 0 20 20" width={size} height={size} className={className} {...base}>
+      <path d="M3 3 17 17" />
+      <path d="M7.1 5.9A8.2 8.2 0 0 1 10 5.4c4.9 0 7.5 4.6 7.5 4.6a11.4 11.4 0 0 1-2.1 2.7" />
+      <path d="M12.6 14.2a8 8 0 0 1-2.6.4C5.1 14.6 2.5 10 2.5 10a11.6 11.6 0 0 1 2-2.6" />
+      <path d="M8.5 8.5a2.2 2.2 0 0 0 3 3" />
+    </svg>
+  )
+}
