@@ -6,6 +6,10 @@ datos y reportes de src/ por HTTP para el dashboard web.
 Ejecutar con: uvicorn api.main:app --reload
 """
 
+from dotenv import load_dotenv
+
+load_dotenv()  # variables opcionales en .env (p. ej. FERRO_BD_URL), antes de leer nada de src/ o api/
+
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request

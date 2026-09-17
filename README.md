@@ -77,11 +77,11 @@ FERRO_BINARIOS=data/binarios_historico python main.py
 
 ### Importar desde una base de datos Postgres o MySQL
 
-Además del CSV, `src/importador_bd.py` puede leer categorías, productos y movimientos directamente de una base de datos Postgres o MySQL (vía SQLAlchemy, con psycopg o PyMySQL según el motor), con las mismas reglas de validación y las mismas funciones de `almacenamiento.py` para guardarlos. Se configura con una variable de entorno, nunca escribiendo la conexión en el menú:
+Además del CSV, `src/importador_bd.py` puede leer categorías, productos y movimientos directamente de una base de datos Postgres o MySQL (vía SQLAlchemy, con psycopg o PyMySQL según el motor), con las mismas reglas de validación y las mismas funciones de `almacenamiento.py` para guardarlos. Se configura con la variable de entorno `FERRO_BD_URL`, nunca escribiendo la conexión en el menú ni en el dashboard; lo más simple es copiar `.env.example` a `.env` (`main.py` y `api/main.py` lo cargan solos al iniciar):
 
 ```bash
-export FERRO_BD_URL="postgresql+psycopg://usuario:clave@host:5432/basededatos"   # o mysql+pymysql://...
-python main.py   # opción [8]
+cp .env.example .env   # y completa FERRO_BD_URL ahí
+python main.py         # opción [8] · o: uvicorn api.main:app --reload, pestaña "Base de datos" del dashboard
 ```
 
 Detalles del esquema esperado, cómo apuntar a otros nombres de tabla, la sincronización incremental de movimientos (para no releer toda la tabla en cada corrida) y un problema de codificación de MySQL que `crear_engine()` corrige solo, están en [`docs/base_de_datos.md`](docs/base_de_datos.md).

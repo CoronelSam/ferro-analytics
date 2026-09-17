@@ -6,21 +6,32 @@ Usa [SQLAlchemy](https://www.sqlalchemy.org) (Core, sin ORM) con SQL estándar, 
 
 ## Configuración
 
-La conexión se toma de la variable de entorno `FERRO_BD_URL`:
+La conexión se toma de la variable de entorno `FERRO_BD_URL`. La forma más simple de definirla es un archivo `.env` en la raíz del proyecto (copia `.env.example`), que tanto `main.py` como `api/main.py` cargan automáticamente al iniciar con `python-dotenv`:
 
 ```bash
-# Postgres
+cp .env.example .env
+```
+
+```dotenv
+# .env (no se versiona)
+FERRO_BD_URL=postgresql+psycopg://usuario:clave@host:5432/basededatos
+# o: FERRO_BD_URL=mysql+pymysql://usuario:clave@host:3306/basededatos
+```
+
+```bash
+python main.py                      # o: uvicorn api.main:app --reload
+```
+
+También funciona como variable de entorno exportada a mano, si se prefiere no usar `.env`:
+
+```bash
 export FERRO_BD_URL="postgresql+psycopg://usuario:clave@host:5432/basededatos"
-
-# MySQL
-export FERRO_BD_URL="mysql+pymysql://usuario:clave@host:3306/basededatos"
-
 python main.py
 ```
 
-`crear_engine()` detecta el motor por el prefijo de la URL (`engine.dialect.name`) y rechaza cualquier otro con `ErrorImportacion`; `nombre_motor(engine)` da un nombre legible ("PostgreSQL"/"MySQL") para mostrarlo, como hace el menú tras conectar.
+`crear_engine()` detecta el motor por el prefijo de la URL (`engine.dialect.name`) y rechaza cualquier otro con `ErrorImportacion`; `nombre_motor(engine)` da un nombre legible ("PostgreSQL"/"MySQL") para mostrarlo, como hace el menú y el dashboard tras conectar.
 
-No hay una forma de introducir la cadena de conexión a mano en el menú a propósito, para no fomentar escribir credenciales en la terminal o dejarlas en el historial de comandos.
+No hay una forma de introducir la cadena de conexión a mano en el menú ni en el dashboard, a propósito: es la única variable de este proyecto que lleva una contraseña, y ni el menú ni el navegador son un lugar seguro para escribirla (queda en el historial de comandos, o viaja por la red desde un formulario web). `.env` cumple el mismo propósito — configurarla una sola vez — sin ese riesgo.
 
 ### MySQL: forzar `utf8mb4`
 

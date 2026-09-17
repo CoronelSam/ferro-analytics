@@ -12,6 +12,7 @@ matplotlib>=3.11
 sqlalchemy>=2.0
 psycopg[binary]>=3.2
 pymysql>=1.1
+python-dotenv>=1.0
 
 # Notebooks de pruebas
 ipykernel>=7.3
