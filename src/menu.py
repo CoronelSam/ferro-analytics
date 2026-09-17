@@ -176,6 +176,7 @@ def _importar_movimientos(ruta: str, nombre_archivo: str) -> None:
     if aceptados:
         alm.guardar_movimientos(aceptados)
         alm.registrar_importacion(nombre_archivo)
+        print(f"\n  Lote: {aceptados[0].lote_origen}  (para deshacer esta importación, opción 9)")
     _mostrar_resultado_importacion("movimientos", len(aceptados), rechazados)
 
 
@@ -567,12 +568,53 @@ def _importar_desde_bd() -> None:
                 engine, codigos, ids_existentes, desde_id=desde_id)
             if aceptados:
                 alm.guardar_movimientos(aceptados)
+                print(f"\n  Lote: {aceptados[0].lote_origen}  (para deshacer esta sincronización, opción 9)")
             _mostrar_resultado_importacion("movimientos", len(aceptados), rechazados)
     except ErrorImportacion as e:
         print(f"\n  Error al importar: {e}")
     except ErrorAlmacenamiento as e:
         print(f"\n  Error al guardar los datos: {e}")
 
+    _pausar()
+
+
+# ──────────────────────────────────────────────
+# Opción 10: Deshacer una importación de movimientos
+# ──────────────────────────────────────────────
+
+def _deshacer_lote_movimientos() -> None:
+    _titulo("DESHACER UNA IMPORTACIÓN DE MOVIMIENTOS")
+
+    lotes = alm.listar_lotes_movimientos()
+    if not lotes:
+        print("  No hay ninguna importación de movimientos identificada por lote.")
+        print("  (Los movimientos importados antes de esta función no tienen lote asignado.)")
+        _pausar()
+        return
+
+    print(f"\n  {'#':<3} {'LOTE':<28} {'CANTIDAD':>9} {'DESDE':<12} {'HASTA':<12}")
+    _linea()
+    for i, l in enumerate(lotes, 1):
+        print(f"  {i:<3} {l['lote']:<28} {l['cantidad']:>9} {l['fecha_desde']:<12} {l['fecha_hasta']:<12}")
+
+    print("\n  [0] Cancelar")
+    opciones_validas = {"0"} | {str(i) for i in range(1, len(lotes) + 1)}
+    opcion = _pedir_opcion(opciones_validas, "  Elija el lote a deshacer")
+    if opcion == "0":
+        print("  Cancelado.")
+        _pausar()
+        return
+
+    lote = lotes[int(opcion) - 1]
+    print(f"\n  Va a eliminar {lote['cantidad']} movimiento(s) del lote '{lote['lote']}'.")
+    confirmacion = input("  Esta acción no se puede deshacer. ¿Continuar? [s/N]: ").strip().lower()
+    if confirmacion != "s":
+        print("  Cancelado.")
+        _pausar()
+        return
+
+    eliminados = alm.eliminar_movimientos_por_lote(lote["lote"])
+    print(f"\n  Eliminados: {eliminados} movimiento(s).")
     _pausar()
 
 
@@ -592,8 +634,9 @@ def ejecutar() -> None:
         print("  [6] Clasificación ABC-XYZ")
         print("  [7] Predicción de demanda")
         print("  [8] Importar desde base de datos (Postgres/MySQL)")
-        print("  [9] Salir")
-        opcion = _pedir_opcion({"1", "2", "3", "4", "5", "6", "7", "8", "9"})
+        print("  [9] Deshacer una importación de movimientos")
+        print("  [10] Salir")
+        opcion = _pedir_opcion({"1", "2", "3", "4", "5", "6", "7", "8", "9", "10"})
 
         try:
             if opcion == "1":
@@ -613,6 +656,8 @@ def ejecutar() -> None:
             elif opcion == "8":
                 _importar_desde_bd()
             elif opcion == "9":
+                _deshacer_lote_movimientos()
+            elif opcion == "10":
                 print("\n  Hasta luego.\n")
                 break
         except FerroAnalyticsError as e:

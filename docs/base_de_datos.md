@@ -100,6 +100,26 @@ aceptados, rechazados = importar_movimientos_desde_bd(
 
 Esto **asume que `id_movimiento` crece con el tiempo** en el sistema de origen (lo normal si es una columna autoincremental). Si el sistema pudiera insertar movimientos con un id menor al último ya sincronizado (por ejemplo, una corrección retroactiva), usa `desde_id=None` para traer toda la tabla y confiar solo en `ids_existentes` para deduplicar — más lento, pero no se pierde ninguna fila. El menú de consola usa `desde_id` automáticamente.
 
+## Deshacer una importación de movimientos
+
+`MovimientoAnalitico.lote_origen` (40 caracteres, parte del formato binario desde la Fase I pero sin usar hasta ahora) etiqueta cada movimiento con la corrida que lo trajo. `importador.importar_movimientos()` e `importador_bd.importar_movimientos_desde_bd()` generan un lote automáticamente si no se pasa uno explícito — `<origen>:<AAAAMMDDHHMMSS>:<sufijo aleatorio>`, p. ej. `csv:20260917103045:a3f9c1` o `bd-PostgreSQL:20260917103045:a3f9c1` — y lo asignan a todos los movimientos aceptados en esa corrida.
+
+Con eso, `almacenamiento.py` puede deshacer una importación completa sin afectar al resto:
+
+```python
+lotes = alm.listar_lotes_movimientos()
+# [{"lote": "csv:20260917103045:a3f9c1", "cantidad": 261,
+#   "fecha_desde": "2025-01-05", "fecha_hasta": "2026-06-12"}, ...]
+
+eliminados = alm.eliminar_movimientos_por_lote(lotes[0]["lote"])
+```
+
+`eliminar_movimientos_por_lote` reescribe `movimientos.dat` sin esas filas y reconstruye `movimientos.idx`/`movimientos_fecha.idx`; no toca categorías ni productos (esos se corrigen solos con upsert al reimportar). Lanza `ErrorAlmacenamiento` si el lote está vacío, para no poder borrar de un tirón todos los movimientos sin lote asignado (los importados antes de este cambio).
+
+Solo aplica a movimientos importados **después** de agregar esta función: los que ya estaban en `movimientos.dat` tienen `lote_origen=""` y no aparecen en `listar_lotes_movimientos()`.
+
+**Disponible en el menú** (opción **[9] Deshacer una importación de movimientos**: lista los lotes, pide confirmación explícita antes de borrar) **y en el dashboard** (pestaña **Importar → Deshacer**: mismo listado, con un botón por lote que pide confirmación con `window.confirm()` antes de llamar a `DELETE /api/movimientos/lotes/{lote}`). Es una operación destructiva e irreversible expuesta sin autenticación — la misma consideración que la sincronización desde base de datos, ahora también para borrar en vez de solo traer datos.
+
 ## Seguridad
 
 Los nombres de tabla se interpolan en el SQL (SQLAlchemy no los parametriza como parametriza valores), así que `importador_bd` valida que sean un identificador simple (`^[A-Za-z_][A-Za-z0-9_]*$`) antes de construir la consulta; cualquier otro valor se rechaza con `ErrorImportacion` sin llegar a tocar la base de datos. Los valores de cada fila sí van parametrizados (`:desde_id`).

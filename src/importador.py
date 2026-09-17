@@ -5,6 +5,7 @@ No escribe en disco: eso corresponde a almacenamiento.py.
 """
 
 import csv
+import uuid
 from datetime import date, datetime
 from typing import Tuple
 
@@ -55,6 +56,19 @@ def _validar_float_no_negativo(valor: str, nombre_campo: str) -> float:
 def _fila_rechazada(numero: int, fila: dict, motivo: str) -> dict:
     """Construye el registro de una fila rechazada."""
     return {"fila": numero, "datos": fila, "motivo": motivo}
+
+
+def _generar_lote(origen: str) -> str:
+    """
+    Identificador de lote para etiquetar los movimientos aceptados en una
+    misma corrida de importar_movimientos()/importar_movimientos_desde_bd():
+    '<origen>:<AAAAMMDDHHMMSS>:<sufijo aleatorio>'. Se guarda en
+    MovimientoAnalitico.lote_origen y permite deshacer esa corrida
+    completa con almacenamiento.eliminar_movimientos_por_lote().
+    """
+    marca = datetime.now().strftime("%Y%m%d%H%M%S")
+    sufijo = uuid.uuid4().hex[:6]
+    return f"{origen}:{marca}:{sufijo}"[:40]
 
 
 # ──────────────────────────────────────────────
@@ -166,6 +180,7 @@ def importar_movimientos(
     ruta_csv: str,
     codigos_validos: set,
     ids_existentes: set,
+    lote: str | None = None,
 ) -> Tuple[list, list]:
     """
     Lee movimientos.csv y valida cada fila.
@@ -176,6 +191,10 @@ def importar_movimientos(
         codigos_validos: conjunto de códigos de producto ya almacenados.
         ids_existentes : conjunto de id_movimiento ya almacenados (para detectar
                          duplicados dentro del mismo archivo y contra el binario).
+        lote           : identificador para etiquetar los movimientos aceptados
+                         (ver _generar_lote); si es None, se genera uno
+                         automáticamente. Permite deshacer esta importación
+                         completa con almacenamiento.eliminar_movimientos_por_lote().
 
     Devuelve:
         (aceptados, rechazados)
@@ -185,6 +204,7 @@ def importar_movimientos(
     Nota: ids_existentes se actualiza en memoria durante la lectura para detectar
     duplicados dentro del mismo archivo CSV.
     """
+    lote = lote or _generar_lote("csv")
     aceptados: list[MovimientoAnalitico] = []
     rechazados: list[dict] = []
     columnas_requeridas = {
@@ -223,6 +243,7 @@ def importar_movimientos(
                         tipo=tipo,
                         cantidad=cantidad,
                         fecha=fecha,
+                        lote_origen=lote,
                     ))
                 except (ValueError, KeyError) as e:
                     rechazados.append(_fila_rechazada(num, dict(fila), str(e)))

@@ -1,7 +1,7 @@
 // Cliente HTTP mínimo hacia api/main.py.
 // En desarrollo, Vite hace proxy de /api al backend (ver vite.config.ts).
 
-import type { EntidadImportable, ResultadoImportacion } from './tipos'
+import type { EntidadImportable, ResultadoDeshacerLote, ResultadoImportacion } from './tipos'
 
 async function manejarRespuesta<T>(respuesta: Response): Promise<T> {
   if (!respuesta.ok) {
@@ -29,6 +29,12 @@ export function importarCSV(
 export function importarDesdeBD(entidad: EntidadImportable): Promise<ResultadoImportacion> {
   return fetch(`/api/importar-bd/${entidad}`, { method: 'POST' }).then(
     (r) => manejarRespuesta<ResultadoImportacion>(r),
+  )
+}
+
+export function deshacerLoteMovimientos(lote: string): Promise<ResultadoDeshacerLote> {
+  return fetch(`/api/movimientos/lotes/${encodeURIComponent(lote)}`, { method: 'DELETE' }).then(
+    (r) => manejarRespuesta<ResultadoDeshacerLote>(r),
   )
 }
 

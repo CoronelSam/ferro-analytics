@@ -1,9 +1,16 @@
 import { useRef, useState, type DragEvent, type FormEvent } from 'react'
 import { Cabecera } from '../componentes/Cabecera'
 import { BotonPrimario } from '../componentes/Boton'
+import { Estado } from '../componentes/Estado'
 import { IconoAlerta, IconoCheck, IconoNube } from '../componentes/Icono'
-import { useEstadoImportacionBD, useImportarCSV, useImportarDesdeBD } from '../lib/consultas'
-import type { EntidadImportable, ResultadoImportacion } from '../lib/tipos'
+import {
+  useDeshacerLoteMovimientos,
+  useEstadoImportacionBD,
+  useImportarCSV,
+  useImportarDesdeBD,
+  useLotesMovimientos,
+} from '../lib/consultas'
+import type { EntidadImportable, LoteMovimientos, ResultadoImportacion } from '../lib/tipos'
 
 const ENTIDADES_CSV: { valor: EntidadImportable; etiqueta: string }[] = [
   { valor: 'categorias', etiqueta: 'categorias.csv' },
@@ -17,7 +24,13 @@ const ENTIDADES_BD: { valor: EntidadImportable; etiqueta: string }[] = [
   { valor: 'movimientos', etiqueta: 'Movimientos' },
 ]
 
-type Origen = 'csv' | 'bd'
+type Origen = 'csv' | 'bd' | 'deshacer'
+
+const PESTANAS: { valor: Origen; etiqueta: string }[] = [
+  { valor: 'csv', etiqueta: 'Archivo CSV' },
+  { valor: 'bd', etiqueta: 'Base de datos' },
+  { valor: 'deshacer', etiqueta: 'Deshacer' },
+]
 
 export function Importar() {
   const [origen, setOrigen] = useState<Origen>('csv')
@@ -29,28 +42,27 @@ export function Importar() {
 
       <div className="px-8 py-7">
         <div className="mb-5 flex w-fit gap-0.5 rounded-[9px] bg-neutral-100 p-[3px]">
-          <button
-            onClick={() => setOrigen('csv')}
-            className={`rounded-[7px] px-4 py-2 text-[12.5px] font-bold ${
-              origen === 'csv' ? 'bg-white text-neutral-900 shadow-sm' : 'text-neutral-500'
-            }`}
-          >
-            Archivo CSV
-          </button>
-          <button
-            onClick={() => setOrigen('bd')}
-            className={`rounded-[7px] px-4 py-2 text-[12.5px] font-bold ${
-              origen === 'bd' ? 'bg-white text-neutral-900 shadow-sm' : 'text-neutral-500'
-            }`}
-          >
-            Base de datos
-          </button>
+          {PESTANAS.map((p) => (
+            <button
+              key={p.valor}
+              onClick={() => setOrigen(p.valor)}
+              className={`rounded-[7px] px-4 py-2 text-[12.5px] font-bold ${
+                origen === p.valor ? 'bg-white text-neutral-900 shadow-sm' : 'text-neutral-500'
+              }`}
+            >
+              {p.etiqueta}
+            </button>
+          ))}
         </div>
 
-        <div className="grid grid-cols-2 gap-5">
-          {origen === 'csv' ? <ImportarCSV onResultado={setResultado} /> : <ImportarBD onResultado={setResultado} />}
-          <PanelResultado resultado={resultado} />
-        </div>
+        {origen === 'deshacer' ? (
+          <DeshacerLotes />
+        ) : (
+          <div className="grid grid-cols-2 gap-5">
+            {origen === 'csv' ? <ImportarCSV onResultado={setResultado} /> : <ImportarBD onResultado={setResultado} />}
+            <PanelResultado resultado={resultado} />
+          </div>
+        )}
       </div>
     </div>
   )
@@ -211,6 +223,12 @@ function PanelResultado({ resultado }: { resultado: ResultadoImportacion | null 
               Insertados: {resultado.insertados} · Actualizados: {resultado.actualizados}
             </div>
           )}
+          {resultado.lote && (
+            <div className="mb-4 ml-7 text-xs font-semibold text-neutral-500">
+              Lote: <span className="font-mono text-neutral-700">{resultado.lote}</span> · para deshacerlo, pestaña
+              "Deshacer"
+            </div>
+          )}
           {resultado.rechazados.length > 0 && (
             <>
               <div className="mb-1 flex items-center gap-2">
@@ -233,6 +251,74 @@ function PanelResultado({ resultado }: { resultado: ResultadoImportacion | null 
             </>
           )}
         </>
+      )}
+    </div>
+  )
+}
+
+function DeshacerLotes() {
+  const lotes = useLotesMovimientos()
+  const mutacion = useDeshacerLoteMovimientos()
+  const [loteEnProceso, setLoteEnProceso] = useState<string | null>(null)
+
+  function deshacer(lote: LoteMovimientos) {
+    const confirmado = window.confirm(
+      `¿Eliminar ${lote.cantidad} movimiento(s) del lote "${lote.lote}"?\n\nEsta acción no se puede deshacer.`,
+    )
+    if (!confirmado) return
+    setLoteEnProceso(lote.lote)
+    mutacion.mutate(lote.lote, { onSettled: () => setLoteEnProceso(null) })
+  }
+
+  return (
+    <div className="overflow-hidden rounded-[14px] border border-neutral-200 bg-white">
+      <div className="border-b border-neutral-100 px-6 py-4">
+        <h2 className="text-sm font-extrabold text-neutral-900">Deshacer una importación de movimientos</h2>
+        <p className="text-xs font-semibold text-neutral-500">
+          Elimina todos los movimientos de un lote (CSV o base de datos). No afecta a categorías ni productos.
+        </p>
+      </div>
+
+      <Estado
+        cargando={lotes.isLoading}
+        error={lotes.error}
+        vacio={lotes.data?.length === 0}
+        mensajeVacio="No hay ninguna importación de movimientos identificada por lote."
+      >
+        <table className="w-full text-sm">
+          <thead className="bg-neutral-50 text-left text-[10.5px] font-extrabold uppercase tracking-wide text-neutral-500">
+            <tr>
+              <th className="px-5 py-2.5">Lote</th>
+              <th className="px-5 py-2.5 text-right">Cantidad</th>
+              <th className="px-5 py-2.5">Desde</th>
+              <th className="px-5 py-2.5">Hasta</th>
+              <th className="px-5 py-2.5" />
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-neutral-100">
+            {lotes.data?.map((l) => (
+              <tr key={l.lote}>
+                <td className="px-5 py-3 font-mono text-xs font-bold text-neutral-700">{l.lote}</td>
+                <td className="px-5 py-3 text-right text-[13px] font-bold text-neutral-900">{l.cantidad}</td>
+                <td className="px-5 py-3 text-[12.5px] font-semibold text-neutral-500">{l.fecha_desde}</td>
+                <td className="px-5 py-3 text-[12.5px] font-semibold text-neutral-500">{l.fecha_hasta}</td>
+                <td className="px-5 py-3 text-right">
+                  <button
+                    onClick={() => deshacer(l)}
+                    disabled={loteEnProceso === l.lote}
+                    className="rounded-[7px] border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-extrabold text-red-700 disabled:opacity-40"
+                  >
+                    {loteEnProceso === l.lote ? 'Eliminando...' : 'Deshacer'}
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </Estado>
+
+      {mutacion.isError && (
+        <p className="px-6 pb-4 text-sm font-semibold text-red-600">Error: {mutacion.error.message}</p>
       )}
     </div>
   )

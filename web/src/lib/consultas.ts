@@ -1,7 +1,7 @@
 // Hooks de TanStack Query, uno por endpoint de la API.
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { importarCSV, importarDesdeBD, obtenerJSON } from './api'
+import { deshacerLoteMovimientos, importarCSV, importarDesdeBD, obtenerJSON } from './api'
 import type {
   AlertaStockBajo,
   CeldaResumen,
@@ -9,6 +9,7 @@ import type {
   ClasificacionABCXYZ,
   EntidadImportable,
   EstadoImportacionBD,
+  LoteMovimientos,
   Movimiento,
   Producto,
   ProductoInmovilizado,
@@ -176,6 +177,23 @@ export function useImportarDesdeBD() {
   const cliente = useQueryClient()
   return useMutation({
     mutationFn: (entidad: EntidadImportable) => importarDesdeBD(entidad),
+    onSuccess: () => {
+      cliente.invalidateQueries()
+    },
+  })
+}
+
+export function useLotesMovimientos() {
+  return useQuery({
+    queryKey: ['movimientos', 'lotes'],
+    queryFn: () => obtenerJSON<LoteMovimientos[]>('/api/movimientos/lotes'),
+  })
+}
+
+export function useDeshacerLoteMovimientos() {
+  const cliente = useQueryClient()
+  return useMutation({
+    mutationFn: (lote: string) => deshacerLoteMovimientos(lote),
     onSuccess: () => {
       cliente.invalidateQueries()
     },

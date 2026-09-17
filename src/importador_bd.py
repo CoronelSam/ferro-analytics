@@ -27,6 +27,7 @@ from sqlalchemy import Engine, create_engine, make_url, text
 from src.excepciones import ErrorImportacion
 from src.importador import (
     _fila_rechazada,
+    _generar_lote,
     _validar_entero_no_negativo,
     _validar_float_no_negativo,
 )
@@ -232,6 +233,7 @@ def importar_movimientos_desde_bd(
     ids_existentes: set,
     tabla: str = "movimientos",
     desde_id: int | None = None,
+    lote: str | None = None,
 ) -> Tuple[list, list]:
     """
     Lee la tabla de movimientos y valida cada fila con las mismas reglas
@@ -252,9 +254,15 @@ def importar_movimientos_desde_bd(
                          sistema de origen; si no se puede asumir eso,
                          deje este parámetro en None y confíe solo en
                          ids_existentes para deduplicar.
+        lote           : identificador para etiquetar los movimientos
+                         aceptados (ver importador._generar_lote); si es
+                         None, se genera uno automáticamente con el motor
+                         detectado. Permite deshacer esta sincronización
+                         completa con almacenamiento.eliminar_movimientos_por_lote().
 
     Devuelve (aceptados, rechazados), igual que la versión CSV.
     """
+    lote = lote or _generar_lote(f"bd-{nombre_motor(engine)}")
     aceptados: list[MovimientoAnalitico] = []
     rechazados: list[dict] = []
 
@@ -293,6 +301,7 @@ def importar_movimientos_desde_bd(
                 tipo=tipo,
                 cantidad=cantidad,
                 fecha=fecha,
+                lote_origen=lote,
             ))
         except (ValueError, KeyError) as e:
             rechazados.append(_fila_rechazada(num, _fila_a_texto(fila), str(e)))

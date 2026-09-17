@@ -282,6 +282,74 @@ def obtener_ids_movimientos(ruta: str = RUTA_MOVIMIENTOS) -> set:
     return {id_mov for id_mov, _ in idx.obtener_indice_movimientos_sincronizado(ruta)}
 
 
+def listar_lotes_movimientos(ruta: str = RUTA_MOVIMIENTOS) -> list:
+    """
+    Agrupa los movimientos por lote_origen (asignado por
+    importador.importar_movimientos()/importador_bd.importar_movimientos_desde_bd()),
+    para elegir cuál deshacer con eliminar_movimientos_por_lote(). Los
+    movimientos sin lote asignado no aparecen: no se pueden deshacer por lote.
+
+    Devuelve una lista de dicts, en el orden en que cada lote aparece por
+    primera vez en el archivo (que también es el orden cronológico de
+    importación, porque movimientos.dat es de solo agregar):
+        [{"lote": str, "cantidad": int, "fecha_desde": str, "fecha_hasta": str}, ...]
+    """
+    resumen: dict = {}
+    orden: list = []
+    for m in leer_movimientos(ruta):
+        if not m.lote_origen:
+            continue
+        if m.lote_origen not in resumen:
+            resumen[m.lote_origen] = {
+                "lote": m.lote_origen,
+                "cantidad": 0,
+                "fecha_desde": m.fecha,
+                "fecha_hasta": m.fecha,
+            }
+            orden.append(m.lote_origen)
+        r = resumen[m.lote_origen]
+        r["cantidad"] += 1
+        r["fecha_desde"] = min(r["fecha_desde"], m.fecha)
+        r["fecha_hasta"] = max(r["fecha_hasta"], m.fecha)
+    return [resumen[lote] for lote in orden]
+
+
+def eliminar_movimientos_por_lote(lote: str, ruta: str = RUTA_MOVIMIENTOS) -> int:
+    """
+    Elimina todos los movimientos cuyo lote_origen sea exactamente `lote`
+    y reconstruye movimientos.idx y movimientos_fecha.idx. Es la forma de
+    deshacer una importación de movimientos completa (CSV o base de
+    datos) sin afectar al resto ni a categorías/productos.
+
+    Recibe:
+        lote: identificador de lote (ver listar_lotes_movimientos()).
+
+    Devuelve la cantidad de movimientos eliminados (0 si el lote no existe).
+
+    Lanza ErrorAlmacenamiento si `lote` está vacío: evita borrar de un
+    tirón todos los movimientos sin lote asignado.
+    """
+    if not lote:
+        raise ErrorAlmacenamiento(
+            "No se puede eliminar por un lote vacío: borraría todos los "
+            "movimientos sin lote asignado."
+        )
+
+    todos = leer_movimientos(ruta)
+    restantes = [m for m in todos if m.lote_origen != lote]
+    eliminados = len(todos) - len(restantes)
+    if eliminados == 0:
+        return 0
+
+    _escribir_registros(ruta, restantes, lambda m: m.a_bytes())
+
+    from src import indices as idx
+    idx.construir_indice_movimientos(ruta)
+    idx.construir_indice_movimientos_fecha(ruta)
+
+    return eliminados
+
+
 # ──────────────────────────────────────────────
 # Registro de importaciones
 # ──────────────────────────────────────────────

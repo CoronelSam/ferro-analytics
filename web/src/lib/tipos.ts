@@ -72,9 +72,22 @@ export interface ResultadoImportacion {
   rechazados: FilaRechazada[]
   insertados: number | null
   actualizados: number | null
+  lote?: string | null
 }
 
 export type EntidadImportable = 'categorias' | 'productos' | 'movimientos'
+
+export interface LoteMovimientos {
+  lote: string
+  cantidad: number
+  fecha_desde: string
+  fecha_hasta: string
+}
+
+export interface ResultadoDeshacerLote {
+  lote: string
+  eliminados: number
+}
 
 export interface EstadoImportacionBD {
   disponible: boolean

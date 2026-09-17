@@ -48,7 +48,8 @@ python main.py
   [6] Clasificación ABC-XYZ
   [7] Predicción de demanda
   [8] Importar desde base de datos (Postgres/MySQL)
-  [9] Salir
+  [9] Deshacer una importación de movimientos
+  [10] Salir
 ```
 
 Para cargar los datos de ejemplo, usa la opción 1 e importa en este orden (los movimientos necesitan que los productos ya existan):
@@ -57,7 +58,7 @@ Para cargar los datos de ejemplo, usa la opción 1 e importa en este orden (los 
 2. `data/entrada/productos.csv`
 3. `data/entrada/movimientos.csv`
 
-Los reportes (opción 4) son: stock total por categoría, top de productos con stock inmovilizado y ventas mensuales por categoría. Los reportes y las alertas de stock bajo (opción 5) pueden exportarse a CSV en `data/reportes/`. Las opciones 6 y 7 son de la Fase II (ver [Analítica](#analítica-fase-ii) más abajo) y necesitan más historial que los datos de ejemplo: usa el histórico sintético. La opción 8 importa directamente desde Postgres o MySQL en vez de un CSV (ver [Base de datos](#importar-desde-una-base-de-datos-postgres-o-mysql) más abajo).
+Los reportes (opción 4) son: stock total por categoría, top de productos con stock inmovilizado y ventas mensuales por categoría. Los reportes y las alertas de stock bajo (opción 5) pueden exportarse a CSV en `data/reportes/`. Las opciones 6 y 7 son de la Fase II (ver [Analítica](#analítica-fase-ii) más abajo) y necesitan más historial que los datos de ejemplo: usa el histórico sintético. La opción 8 importa directamente desde Postgres o MySQL en vez de un CSV, y la 9 deshace una importación de movimientos por lote (ver [Base de datos](#importar-desde-una-base-de-datos-postgres-o-mysql) más abajo).
 
 ### Datos históricos (Fase II)
 
@@ -84,7 +85,9 @@ cp .env.example .env   # y completa FERRO_BD_URL ahí
 python main.py         # opción [8] · o: uvicorn api.main:app --reload, pestaña "Base de datos" del dashboard
 ```
 
-Detalles del esquema esperado, cómo apuntar a otros nombres de tabla, la sincronización incremental de movimientos (para no releer toda la tabla en cada corrida) y un problema de codificación de MySQL que `crear_engine()` corrige solo, están en [`docs/base_de_datos.md`](docs/base_de_datos.md).
+Cada importación de movimientos (CSV o base de datos) queda etiquetada con un lote; la opción **[9]** del menú y la pestaña **Importar → Deshacer** del dashboard permiten eliminar solo los movimientos de un lote (no afecta a categorías ni productos), con confirmación explícita antes de borrar.
+
+Detalles del esquema esperado, cómo apuntar a otros nombres de tabla, la sincronización incremental de movimientos, cómo deshacer una importación por lote y un problema de codificación de MySQL que `crear_engine()` corrige solo, están en [`docs/base_de_datos.md`](docs/base_de_datos.md).
 
 ### Analítica (Fase II)
 

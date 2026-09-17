@@ -90,12 +90,25 @@ class ResultadoImportacion(BaseModel):
     rechazados: list[FilaRechazada]
     insertados: int | None = None
     actualizados: int | None = None
+    lote: str | None = None
 
 
 class EstadoImportacionBD(BaseModel):
     disponible: bool
     motor: str | None
     detalle: str | None
+
+
+class LoteMovimientos(BaseModel):
+    lote: str
+    cantidad: int
+    fecha_desde: str
+    fecha_hasta: str
+
+
+class ResultadoDeshacerLote(BaseModel):
+    lote: str
+    eliminados: int
 
 
 # ──────────────────────────────────────────────

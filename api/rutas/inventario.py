@@ -93,7 +93,8 @@ async def importar_csv(entidad: str, archivo: UploadFile):
             codigos = alm.obtener_codigos_productos()
             ids_existentes = alm.obtener_ids_movimientos()
             aceptadas, rechazadas = imp.importar_movimientos(ruta_temporal, codigos, ids_existentes)
-            resultado = {"insertados": None, "actualizados": None}
+            resultado = {"insertados": None, "actualizados": None,
+                         "lote": aceptadas[0].lote_origen if aceptadas else None}
             if aceptadas:
                 alm.guardar_movimientos(aceptadas)
     finally:
@@ -159,7 +160,8 @@ def importar_desde_bd(entidad: str):
         desde_id = max(ids_existentes) if ids_existentes else None
         aceptadas, rechazadas = imp_bd.importar_movimientos_desde_bd(
             engine, codigos, ids_existentes, desde_id=desde_id)
-        resultado = {"insertados": None, "actualizados": None}
+        resultado = {"insertados": None, "actualizados": None,
+                     "lote": aceptadas[0].lote_origen if aceptadas else None}
         if aceptadas:
             alm.guardar_movimientos(aceptadas)
 
@@ -172,3 +174,26 @@ def importar_desde_bd(entidad: str):
         "rechazados": rechazadas,
         **resultado,
     }
+
+
+@router.get("/movimientos/lotes")
+def obtener_lotes_movimientos():
+    """
+    Lotes de movimientos identificables por lote_origen (asignado al
+    importar por CSV o base de datos), para poder deshacerlos. Ver
+    src/almacenamiento.py:listar_lotes_movimientos().
+    """
+    return alm.listar_lotes_movimientos()
+
+
+@router.delete("/movimientos/lotes/{lote}")
+def deshacer_lote_movimientos(lote: str):
+    """
+    Elimina todos los movimientos de `lote` (ver /movimientos/lotes) y
+    reconstruye los índices de movimientos. Operación destructiva e
+    irreversible: no afecta a categorías ni productos.
+    """
+    eliminados = alm.eliminar_movimientos_por_lote(lote)
+    if eliminados:
+        datos.cargar()
+    return {"lote": lote, "eliminados": eliminados}
