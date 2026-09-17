@@ -1,3 +1,7 @@
 fastapi
 uvicorn[standard]
 python-multipart
+
+# Login de usuarios (Fase II): hash de contraseñas y tokens de sesión
+bcrypt>=4.0
+pyjwt>=2.8

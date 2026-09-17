@@ -1,19 +1,29 @@
 // Cliente HTTP mínimo hacia api/main.py.
 // En desarrollo, Vite hace proxy de /api al backend (ver vite.config.ts).
 
-import { obtenerClaveApi } from './claveApi'
-import type { EntidadImportable, ResultadoDeshacerLote, ResultadoImportacion } from './tipos'
+import { cerrarSesion, obtenerSesion } from './sesion'
+import type {
+  EntidadImportable,
+  ResultadoDeshacerLote,
+  ResultadoImportacion,
+  SesionUsuario,
+} from './tipos'
 
-// Header con la clave guardada localmente, si hay una (ver claveApi.ts).
-// Sin FERRO_API_KEY configurada en el servidor, el backend la ignora; con
-// ella configurada, la exige solo en mutaciones (POST/PUT/PATCH/DELETE).
-function headersConClave(): HeadersInit {
-  const clave = obtenerClaveApi()
-  return clave ? { 'X-API-Key': clave } : {}
+// Header con el token de sesión guardado localmente, si hay uno (ver
+// sesion.ts). Las lecturas (GET) siempre están abiertas; las mutaciones
+// (POST/PUT/PATCH/DELETE) exigen este token (ver api/auth.py).
+function headersConToken(): HeadersInit {
+  const sesion = obtenerSesion()
+  return sesion ? { Authorization: `Bearer ${sesion.token}` } : {}
 }
 
 async function manejarRespuesta<T>(respuesta: Response): Promise<T> {
   if (!respuesta.ok) {
+    // Token vencido o inválido a mitad de sesión: se cierra sola para que
+    // la pantalla de login vuelva a aparecer en vez de seguir fallando.
+    if (respuesta.status === 401 && obtenerSesion()) {
+      cerrarSesion()
+    }
     const cuerpo = await respuesta.json().catch(() => null)
     throw new Error(cuerpo?.detail ?? `Error ${respuesta.status}`)
   }
@@ -22,6 +32,14 @@ async function manejarRespuesta<T>(respuesta: Response): Promise<T> {
 
 export function obtenerJSON<T>(ruta: string): Promise<T> {
   return fetch(ruta).then((r) => manejarRespuesta<T>(r))
+}
+
+export function iniciarSesion(usuario: string, contrasena: string): Promise<SesionUsuario> {
+  return fetch('/api/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ usuario, contrasena }),
+  }).then((r) => manejarRespuesta<SesionUsuario>(r))
 }
 
 export function importarCSV(
@@ -33,21 +51,21 @@ export function importarCSV(
   return fetch(`/api/importar/${entidad}`, {
     method: 'POST',
     body: form,
-    headers: headersConClave(),
+    headers: headersConToken(),
   }).then((r) => manejarRespuesta<ResultadoImportacion>(r))
 }
 
 export function importarDesdeBD(entidad: EntidadImportable): Promise<ResultadoImportacion> {
   return fetch(`/api/importar-bd/${entidad}`, {
     method: 'POST',
-    headers: headersConClave(),
+    headers: headersConToken(),
   }).then((r) => manejarRespuesta<ResultadoImportacion>(r))
 }
 
 export function deshacerLoteMovimientos(lote: string): Promise<ResultadoDeshacerLote> {
   return fetch(`/api/movimientos/lotes/${encodeURIComponent(lote)}`, {
     method: 'DELETE',
-    headers: headersConClave(),
+    headers: headersConToken(),
   }).then((r) => manejarRespuesta<ResultadoDeshacerLote>(r))
 }
 

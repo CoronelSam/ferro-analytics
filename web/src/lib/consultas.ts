@@ -1,7 +1,8 @@
 // Hooks de TanStack Query, uno por endpoint de la API.
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { deshacerLoteMovimientos, importarCSV, importarDesdeBD, obtenerJSON } from './api'
+import { deshacerLoteMovimientos, importarCSV, importarDesdeBD, iniciarSesion, obtenerJSON } from './api'
+import { guardarSesion } from './sesion'
 import type {
   AlertaStockBajo,
   CeldaResumen,
@@ -26,6 +27,14 @@ export function useSalud() {
     queryKey: ['salud'],
     queryFn: () => obtenerJSON<Salud>('/api/salud'),
     staleTime: 60_000,
+  })
+}
+
+export function useIniciarSesion() {
+  return useMutation({
+    mutationFn: ({ usuario, contrasena }: { usuario: string; contrasena: string }) =>
+      iniciarSesion(usuario, contrasena),
+    onSuccess: (sesion) => guardarSesion(sesion),
   })
 }
 

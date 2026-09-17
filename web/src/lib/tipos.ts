@@ -97,7 +97,17 @@ export interface EstadoImportacionBD {
 
 export interface Salud {
   estado: string
-  solo_lectura: boolean
+}
+
+// ──────────────────────────────────────────────
+// Autenticación (ver api/usuarios.py, api/auth.py)
+// ──────────────────────────────────────────────
+
+export interface SesionUsuario {
+  token: string
+  usuario: string
+  nombre: string
+  rol: string
 }
 
 // ──────────────────────────────────────────────

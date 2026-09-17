@@ -116,7 +116,13 @@ pnpm --dir web run dev
 
 La documentación interactiva de la API queda en http://127.0.0.1:8000/docs. Los errores propios de FerroAnalytics (CSV inválido, binario corrupto, datos insuficientes para predecir) responden con el código HTTP correspondiente y `{"detail": "..."}`, y además quedan registrados en `data/logs/ferroanalytics.log`.
 
-Por defecto cualquiera con acceso al dashboard puede importar, sincronizar o deshacer datos. Para compartirlo en modo solo lectura (con un profesor, con la ferretería), define `FERRO_API_KEY` en el `.env` de la API: las lecturas siguen abiertas, pero las mutaciones exigen esa clave (header `X-API-Key`), que cada persona con permiso guarda una vez en el control "Solo lectura" de la barra lateral del dashboard. Ver `.env.example` y `docs/base_de_datos.md`.
+El dashboard exige iniciar sesión: las lecturas (GET) quedan abiertas en la API, pero toda mutación (importar, sincronizar, deshacer un lote) exige el token que entrega el login. Crea el primer usuario desde la terminal:
+
+```bash
+python scripts/crear_usuario.py admin "Administradora" --rol admin
+```
+
+y usa ese usuario y contraseña en la pantalla de login del dashboard. Ver `.env.example` (`FERRO_JWT_SECRET`) y `docs/base_de_datos.md`.
 
 ### Notebooks de pruebas
 

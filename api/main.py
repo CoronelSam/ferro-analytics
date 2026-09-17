@@ -17,8 +17,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from api import datos
-from api.rutas import analitica, inventario, reportes
-from api.seguridad import exigir_clave_para_mutaciones, modo_solo_lectura_activo
+from api.auth import exigir_usuario_para_mutaciones
+from api.rutas import analitica, auth, inventario, reportes
 from src.excepciones import (
     ArchivoCorrupto,
     DatosInsuficientes,
@@ -43,7 +43,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="FerroAnalytics API",
     lifespan=lifespan,
-    dependencies=[Depends(exigir_clave_para_mutaciones)],
+    dependencies=[Depends(exigir_usuario_para_mutaciones)],
 )
 
 app.add_middleware(
@@ -53,6 +53,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(auth.router)
 app.include_router(inventario.router)
 app.include_router(reportes.router)
 app.include_router(analitica.router)
@@ -96,4 +97,4 @@ def manejar_error_generico(request: Request, exc: FerroAnalyticsError):
 
 @app.get("/api/salud")
 def salud():
-    return {"estado": "ok", "solo_lectura": modo_solo_lectura_activo()}
+    return {"estado": "ok"}

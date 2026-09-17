@@ -36,6 +36,22 @@ class Movimiento(BaseModel):
 
 
 # ──────────────────────────────────────────────
+# Autenticación (ver api/usuarios.py, api/auth.py)
+# ──────────────────────────────────────────────
+
+class SolicitudLogin(BaseModel):
+    usuario: str
+    contrasena: str
+
+
+class SesionUsuario(BaseModel):
+    token: str
+    usuario: str
+    nombre: str
+    rol: str
+
+
+# ──────────────────────────────────────────────
 # Reportes (Reporte 1-4 de src/reportes.py)
 # ──────────────────────────────────────────────
 

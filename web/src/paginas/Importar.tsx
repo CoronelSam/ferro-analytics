@@ -2,15 +2,13 @@ import { useRef, useState, type DragEvent, type FormEvent } from 'react'
 import { Cabecera } from '../componentes/Cabecera'
 import { BotonPrimario } from '../componentes/Boton'
 import { Estado } from '../componentes/Estado'
-import { IconoAlerta, IconoCandado, IconoCheck, IconoNube } from '../componentes/Icono'
-import { useClaveApiPresente } from '../lib/claveApi'
+import { IconoAlerta, IconoCheck, IconoNube } from '../componentes/Icono'
 import {
   useDeshacerLoteMovimientos,
   useEstadoImportacionBD,
   useImportarCSV,
   useImportarDesdeBD,
   useLotesMovimientos,
-  useSalud,
 } from '../lib/consultas'
 import type { EntidadImportable, LoteMovimientos, ResultadoImportacion } from '../lib/tipos'
 
@@ -37,25 +35,12 @@ const PESTANAS: { valor: Origen; etiqueta: string }[] = [
 export function Importar() {
   const [origen, setOrigen] = useState<Origen>('csv')
   const [resultado, setResultado] = useState<ResultadoImportacion | null>(null)
-  const salud = useSalud()
-  const claveGuardada = useClaveApiPresente()
-  const bloqueado = Boolean(salud.data?.solo_lectura) && !claveGuardada
 
   return (
     <div className="flex flex-col">
       <Cabecera titulo="Importar datos" subtitulo="Sube categorías, productos o movimientos desde el sistema de inventario." />
 
       <div className="px-8 py-7">
-        {bloqueado && (
-          <div className="mb-5 flex items-center gap-2.5 rounded-[9px] border border-[#FFE0CC] bg-[#FFF7F1] px-4 py-3">
-            <IconoCandado size={16} className="flex-shrink-0 text-[#E65F00]" />
-            <p className="text-xs font-bold text-[#8A5A28]">
-              Este dashboard está en modo solo lectura. Ingresa la clave de la API (barra lateral) para poder
-              importar, sincronizar o deshacer datos.
-            </p>
-          </div>
-        )}
-
         <div className="mb-5 flex w-fit gap-0.5 rounded-[9px] bg-[#EDF3F9] p-[3px]">
           {PESTANAS.map((p) => (
             <button
@@ -71,13 +56,13 @@ export function Importar() {
         </div>
 
         {origen === 'deshacer' ? (
-          <DeshacerLotes bloqueado={bloqueado} />
+          <DeshacerLotes />
         ) : (
           <div className="grid grid-cols-2 gap-5">
             {origen === 'csv' ? (
-              <ImportarCSV onResultado={setResultado} bloqueado={bloqueado} />
+              <ImportarCSV onResultado={setResultado} />
             ) : (
-              <ImportarBD onResultado={setResultado} bloqueado={bloqueado} />
+              <ImportarBD onResultado={setResultado} />
             )}
             <PanelResultado resultado={resultado} />
           </div>
@@ -89,10 +74,8 @@ export function Importar() {
 
 function ImportarCSV({
   onResultado,
-  bloqueado,
 }: {
   onResultado: (r: ResultadoImportacion) => void
-  bloqueado: boolean
 }) {
   const [entidad, setEntidad] = useState<EntidadImportable>('productos')
   const [archivo, setArchivo] = useState<File | null>(null)
@@ -160,7 +143,7 @@ function ImportarCSV({
       </div>
 
       <div className="mt-5">
-        <BotonPrimario type="submit" disabled={!archivo || mutacion.isPending || bloqueado}>
+        <BotonPrimario type="submit" disabled={!archivo || mutacion.isPending}>
           {mutacion.isPending ? 'Importando...' : 'Importar archivo'}
         </BotonPrimario>
       </div>
@@ -172,10 +155,8 @@ function ImportarCSV({
 
 function ImportarBD({
   onResultado,
-  bloqueado,
 }: {
   onResultado: (r: ResultadoImportacion) => void
-  bloqueado: boolean
 }) {
   const [entidad, setEntidad] = useState<EntidadImportable>('productos')
   const estado = useEstadoImportacionBD()
@@ -226,7 +207,7 @@ function ImportarBD({
       )}
 
       <div className="mt-5">
-        <BotonPrimario onClick={sincronizar} disabled={!estado.data?.disponible || mutacion.isPending || bloqueado}>
+        <BotonPrimario onClick={sincronizar} disabled={!estado.data?.disponible || mutacion.isPending}>
           {mutacion.isPending ? 'Sincronizando...' : 'Sincronizar ahora'}
         </BotonPrimario>
       </div>
@@ -287,7 +268,7 @@ function PanelResultado({ resultado }: { resultado: ResultadoImportacion | null 
   )
 }
 
-function DeshacerLotes({ bloqueado }: { bloqueado: boolean }) {
+function DeshacerLotes() {
   const lotes = useLotesMovimientos()
   const mutacion = useDeshacerLoteMovimientos()
   const [loteEnProceso, setLoteEnProceso] = useState<string | null>(null)
@@ -336,8 +317,7 @@ function DeshacerLotes({ bloqueado }: { bloqueado: boolean }) {
                 <td className="px-5 py-3 text-right">
                   <button
                     onClick={() => deshacer(l)}
-                    disabled={loteEnProceso === l.lote || bloqueado}
-                    title={bloqueado ? 'Modo solo lectura: ingresa la clave de la API para deshacer lotes.' : undefined}
+                    disabled={loteEnProceso === l.lote}
                     className="rounded-[7px] border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-extrabold text-red-700 disabled:opacity-40"
                   >
                     {loteEnProceso === l.lote ? 'Eliminando...' : 'Deshacer'}

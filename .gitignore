@@ -4,6 +4,7 @@ data/binarios/
 data/binarios_*/
 data/reportes/
 data/logs/
+data/usuarios.db
 
 # ── Python ───────────────────────────────────────────────
 __pycache__/
