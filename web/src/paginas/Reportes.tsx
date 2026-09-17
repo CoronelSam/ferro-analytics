@@ -15,17 +15,29 @@ import { BotonFantasma } from '../componentes/Boton'
 import { IconoDescargar } from '../componentes/Icono'
 import { formatearLempiras } from '../lib/api'
 import { hexCategoria } from '../lib/colores'
+import { descargarCSV } from '../lib/csv'
 import { useCategorias, useTopInmovilizado, useVentasMensuales } from '../lib/consultas'
 
 type Pestana = 'inmovilizado' | 'ventas'
 
 export function Reportes() {
   const [pestana, setPestana] = useState<Pestana>('inmovilizado')
+  const inmovilizado = useTopInmovilizado(10, 90)
+  const ventas = useVentasMensuales()
+
+  const hayDatosExportar = pestana === 'inmovilizado' ? !!inmovilizado.data?.length : !!ventas.data?.length
 
   return (
     <div className="flex flex-col">
       <Cabecera titulo="Reportes" subtitulo="Top inmovilizado y ventas mensuales por categoría.">
-        <BotonFantasma>
+        <BotonFantasma
+          onClick={() =>
+            pestana === 'inmovilizado'
+              ? descargarCSV('top_inmovilizado', inmovilizado.data ?? [])
+              : descargarCSV('ventas_mensuales', ventas.data ?? [])
+          }
+          disabled={!hayDatosExportar}
+        >
           <IconoDescargar size={16} />
           Exportar CSV
         </BotonFantasma>

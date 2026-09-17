@@ -1,7 +1,10 @@
 import { useState } from 'react'
 import { Estado } from '../componentes/Estado'
 import { Cabecera } from '../componentes/Cabecera'
+import { BotonFantasma } from '../componentes/Boton'
+import { IconoDescargar } from '../componentes/Icono'
 import { useAlertas } from '../lib/consultas'
+import { descargarCSV } from '../lib/csv'
 
 export function Alertas() {
   const [usarUmbral, setUsarUmbral] = useState(false)
@@ -11,7 +14,15 @@ export function Alertas() {
 
   return (
     <div className="flex flex-col">
-      <Cabecera titulo="Alertas de stock bajo" subtitulo={`${alertas.data?.length ?? 0} productos requieren reposición.`} />
+      <Cabecera titulo="Alertas de stock bajo" subtitulo={`${alertas.data?.length ?? 0} productos requieren reposición.`}>
+        <BotonFantasma
+          onClick={() => descargarCSV('alertas_stock_bajo', alertas.data ?? [])}
+          disabled={!alertas.data?.length}
+        >
+          <IconoDescargar size={16} />
+          Exportar CSV
+        </BotonFantasma>
+      </Cabecera>
 
       <div className="flex flex-col gap-5 px-8 py-7">
         <div className="flex items-center gap-3.5 rounded-[14px] border border-neutral-200 bg-white px-5 py-4">

@@ -11,7 +11,10 @@ import {
 } from 'recharts'
 import { Estado } from '../componentes/Estado'
 import { Cabecera } from '../componentes/Cabecera'
+import { BotonFantasma } from '../componentes/Boton'
+import { IconoDescargar } from '../componentes/Icono'
 import { formatearLempiras } from '../lib/api'
+import { descargarCSV } from '../lib/csv'
 import {
   useCategorias,
   useClasificacionABCXYZ,
@@ -33,6 +36,10 @@ const COLOR_ABC: Record<ClaseABC, string> = {
   C: 'bg-neutral-100 text-neutral-600 border-neutral-200',
 }
 
+// Etiquetas en lenguaje llano para las clases técnicas ABC/XYZ.
+const ETIQUETA_ABC: Record<ClaseABC, string> = { A: 'Alta', B: 'Media', C: 'Baja' }
+const ETIQUETA_XYZ: Record<ClaseXYZ, string> = { X: 'Estable', Y: 'Variable', Z: 'Irregular' }
+
 const NOMBRES_MODELO: Record<string, string> = {
   ingenuo: 'Ingenuo',
   media_movil: 'Media móvil',
@@ -42,13 +49,24 @@ const NOMBRES_MODELO: Record<string, string> = {
 
 export function Analitica() {
   const [pestana, setPestana] = useState<Pestana>('clasificacion')
+  const clasificacion = useClasificacionABCXYZ()
 
   return (
     <div className="flex flex-col">
       <Cabecera
         titulo="Analítica"
         subtitulo="Clasificación ABC-XYZ y predicción de demanda."
-      />
+      >
+        {pestana === 'clasificacion' && (
+          <BotonFantasma
+            onClick={() => descargarCSV('clasificacion_abc_xyz', clasificacion.data ?? [])}
+            disabled={!clasificacion.data?.length}
+          >
+            <IconoDescargar size={16} />
+            Exportar CSV
+          </BotonFantasma>
+        )}
+      </Cabecera>
 
       <div className="flex flex-col gap-5 px-8 py-7">
         <div className="flex border-b border-neutral-200">
@@ -90,6 +108,12 @@ function ClasificacionABCXYZ() {
   return (
     <Estado cargando={resumen.isLoading || clasificacion.isLoading} error={resumen.error ?? clasificacion.error}>
       <div className="flex flex-col gap-5">
+        <p className="text-[12.5px] font-semibold leading-snug text-neutral-500">
+          <strong className="text-neutral-700">Prioridad</strong> (Alta/Media/Baja): qué tanto pesa el producto en
+          las ventas. <strong className="text-neutral-700">Demanda</strong> (Estable/Variable/Irregular): qué tan
+          predecible es mes a mes.
+        </p>
+
         <div className="grid grid-cols-3 gap-3">
           {celdas.map((celda, i) => {
             const abc = CLASES_ABC[Math.floor(i / 3)]
@@ -100,7 +124,12 @@ function ClasificacionABCXYZ() {
                 className={`flex flex-col gap-2 rounded-[14px] border p-4 ${COLOR_ABC[abc]}`}
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-extrabold">{abc}{xyz}</span>
+                  <div className="flex flex-col">
+                    <span className="text-sm font-extrabold">
+                      {ETIQUETA_ABC[abc]} · {ETIQUETA_XYZ[xyz]}
+                    </span>
+                    <span className="text-[10px] font-bold uppercase tracking-wide opacity-60">{abc}{xyz}</span>
+                  </div>
                   <span className="text-xs font-bold">{celda?.num_productos ?? 0} prod.</span>
                 </div>
                 <span className="text-lg font-extrabold tracking-tight">
@@ -127,8 +156,9 @@ function ClasificacionABCXYZ() {
                   <th className="px-4 py-2.5">Código</th>
                   <th className="px-4 py-2.5">Nombre</th>
                   <th className="px-4 py-2.5 text-right">Valor de consumo</th>
+                  <th className="px-4 py-2.5">Prioridad</th>
+                  <th className="px-4 py-2.5">Demanda</th>
                   <th className="px-4 py-2.5 text-right">CV demanda</th>
-                  <th className="px-4 py-2.5">Celda</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-100">
@@ -139,13 +169,16 @@ function ClasificacionABCXYZ() {
                     <td className="px-4 py-3 text-right text-[13px] font-bold text-neutral-900">
                       {formatearLempiras(r.valor_consumo)}
                     </td>
-                    <td className="px-4 py-3 text-right text-[13px] font-semibold text-neutral-600">
-                      {r.cv_demanda ?? '—'}
-                    </td>
                     <td className="px-4 py-3">
                       <span className={`rounded-full border px-2.5 py-1 text-xs font-extrabold ${COLOR_ABC[r.clase_abc]}`}>
-                        {r.celda}
+                        {ETIQUETA_ABC[r.clase_abc]} ({r.clase_abc})
                       </span>
+                    </td>
+                    <td className="px-4 py-3 text-[13px] font-semibold text-neutral-600">
+                      {ETIQUETA_XYZ[r.clase_xyz]} ({r.clase_xyz})
+                    </td>
+                    <td className="px-4 py-3 text-right text-[13px] font-semibold text-neutral-600">
+                      {r.cv_demanda ?? '—'}
                     </td>
                   </tr>
                 ))}

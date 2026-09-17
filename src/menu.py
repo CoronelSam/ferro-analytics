@@ -436,6 +436,11 @@ def _ver_alertas() -> None:
 # Opción 6: Clasificación ABC-XYZ
 # ──────────────────────────────────────────────
 
+# Etiquetas en lenguaje llano para las clases técnicas ABC/XYZ.
+_ETIQUETA_ABC = {"A": "Alta", "B": "Media", "C": "Baja"}
+_ETIQUETA_XYZ = {"X": "Estable", "Y": "Variable", "Z": "Irregular"}
+
+
 def _ver_clasificacion_abc_xyz() -> None:
     _titulo("CLASIFICACIÓN ABC-XYZ")
 
@@ -446,20 +451,27 @@ def _ver_clasificacion_abc_xyz() -> None:
         _pausar()
         return
 
+    print("  Prioridad (A/B/C): qué tanto pesa el producto en las ventas.")
+    print("  Demanda (X/Y/Z): qué tan estable es su demanda mes a mes.")
+
     clasificacion = clf.clasificar_abc_xyz(productos, movimientos)
     resumen = clf.resumen_matriz(clasificacion)
 
-    print(f"\n  {'CELDA':<6} {'PRODUCTOS':>9} {'VALOR CONSUMO (L)':>18}  RECOMENDACIÓN")
-    _linea()
     for r in resumen:
-        print(f"  {r['celda']:<6} {r['num_productos']:>9} {r['valor_consumo_total']:>18,.2f}  {r['recomendacion']}")
+        prioridad = _ETIQUETA_ABC[r["clase_abc"]]
+        demanda = _ETIQUETA_XYZ[r["clase_xyz"]]
+        print(f"\n  [{r['celda']}] Prioridad {prioridad} · Demanda {demanda}  "
+              f"({r['num_productos']} productos, L {r['valor_consumo_total']:,.2f})")
+        print(f"        {r['recomendacion']}")
 
     _seccion("Detalle por producto")
-    print(f"  {'CÓDIGO':<10} {'NOMBRE':<25} {'VALOR (L)':>12} {'CV':>7} {'CELDA':<6}")
+    print(f"  {'CÓDIGO':<10} {'NOMBRE':<25} {'VALOR (L)':>12} {'CV':>7}  {'PRIORIDAD':<10} {'DEMANDA':<12}")
     _linea()
     for r in clasificacion:
         cv_txt = f"{r['cv_demanda']:.2f}" if r["cv_demanda"] is not None else "—"
-        print(f"  {r['codigo']:<10} {r['nombre']:<25} {r['valor_consumo']:>12,.2f} {cv_txt:>7} {r['celda']:<6}")
+        prioridad = f"{_ETIQUETA_ABC[r['clase_abc']]} ({r['clase_abc']})"
+        demanda = f"{_ETIQUETA_XYZ[r['clase_xyz']]} ({r['clase_xyz']})"
+        print(f"  {r['codigo']:<10} {r['nombre']:<25} {r['valor_consumo']:>12,.2f} {cv_txt:>7}  {prioridad:<10} {demanda:<12}")
 
     _ofrecer_exportar(clasificacion, "clasificacion_abc_xyz")
     _pausar()

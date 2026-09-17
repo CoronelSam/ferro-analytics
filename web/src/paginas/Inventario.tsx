@@ -6,6 +6,7 @@ import { BotonFantasma, BotonPrimario } from '../componentes/Boton'
 import { IconoBuscar, IconoChevronAbajo, IconoDescargar, IconoImportar } from '../componentes/Icono'
 import { formatearLempiras } from '../lib/api'
 import { useCategorias, useProductos } from '../lib/consultas'
+import { descargarCSV } from '../lib/csv'
 
 export function Inventario() {
   const productos = useProductos()
@@ -27,7 +28,7 @@ export function Inventario() {
   return (
     <div className="flex flex-col">
       <Cabecera titulo="Inventario" subtitulo={`${productos.data?.length ?? 0} productos activos en ${categorias.data?.length ?? 0} categorías.`}>
-        <BotonFantasma>
+        <BotonFantasma onClick={() => descargarCSV('inventario', filtrados)} disabled={!filtrados.length}>
           <IconoDescargar size={16} />
           Exportar
         </BotonFantasma>

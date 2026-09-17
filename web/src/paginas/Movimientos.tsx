@@ -4,6 +4,7 @@ import { Cabecera } from '../componentes/Cabecera'
 import { BotonFantasma, BotonPrimario } from '../componentes/Boton'
 import { IconoDescargar, IconoImportar } from '../componentes/Icono'
 import { useMovimientos } from '../lib/consultas'
+import { descargarCSV } from '../lib/csv'
 
 const OPCIONES_TIPO = [
   { valor: '', etiqueta: 'Todos' },
@@ -28,7 +29,10 @@ export function Movimientos() {
   return (
     <div className="flex flex-col">
       <Cabecera titulo="Movimientos" subtitulo="Consulta entradas y salidas por período.">
-        <BotonFantasma>
+        <BotonFantasma
+          onClick={() => descargarCSV('movimientos', movimientos.data ?? [])}
+          disabled={!movimientos.data?.length}
+        >
           <IconoDescargar size={16} />
           Exportar
         </BotonFantasma>
