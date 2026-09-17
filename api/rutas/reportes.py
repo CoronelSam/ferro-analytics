@@ -33,4 +33,9 @@ def ventas_mensuales_por_categoria():
 
 @router.get("/alertas")
 def alertas_stock_bajo(umbral: int | None = Query(default=None, ge=0)):
-    return rep.alertas_stock_bajo(datos.productos(), umbral=umbral)
+    return rep.alertas_stock_bajo(
+        datos.productos(),
+        umbral=umbral,
+        categorias=datos.categorias(),
+        movimientos=datos.movimientos(),
+    )

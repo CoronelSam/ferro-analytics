@@ -173,30 +173,101 @@ def ventas_mensuales_por_categoria(
 # Reporte 4: Alertas de stock bajo
 # ──────────────────────────────────────────────
 
-def alertas_stock_bajo(productos: list, umbral: int | None = None) -> list:
+def _velocidad_diaria_ventas(movimientos: list, ventana_dias: int) -> dict:
+    """
+    Unidades vendidas por día, en promedio, por cada producto, contando solo
+    las salidas de los últimos `ventana_dias` días. La referencia de "hoy" es
+    la fecha del último movimiento registrado, no date.today() (ver
+    CLAUDE.md, análisis de Fase II).
+
+    Devuelve {codigo_producto: unidades_por_dia}; los productos sin salidas
+    en la ventana no aparecen en el resultado.
+    """
+    fechas_salida = [_parsear_fecha(m.fecha) for m in movimientos if m.tipo == "S"]
+    fechas_salida = [f for f in fechas_salida if f != date.min]
+    if not fechas_salida:
+        return {}
+
+    referencia = max(fechas_salida)
+    corte = referencia - timedelta(days=ventana_dias)
+
+    unidades: dict[str, int] = {}
+    for m in movimientos:
+        if m.tipo != "S":
+            continue
+        fecha_mov = _parsear_fecha(m.fecha)
+        if corte < fecha_mov <= referencia:
+            unidades[m.codigo_producto] = unidades.get(m.codigo_producto, 0) + m.cantidad
+
+    return {codigo: total / ventana_dias for codigo, total in unidades.items()}
+
+
+def alertas_stock_bajo(
+    productos: list,
+    umbral: int | None = None,
+    categorias: list | None = None,
+    movimientos: list | None = None,
+    ventana_dias: int = 60,
+) -> list:
     """
     Lista los productos cuyo stock_actual está por debajo del mínimo.
 
     Recibe:
-        productos: lista de ProductoAnalitico.
-        umbral   : si se indica, se usa como mínimo para todos los productos;
-                   si es None, se usa el stock_minimo de cada producto.
+        productos   : lista de ProductoAnalitico.
+        umbral      : si se indica, se usa como mínimo para todos los
+                      productos; si es None, se usa el stock_minimo propio
+                      de cada producto.
+        categorias  : opcional; si se indica, cada alerta incluye
+                      "nombre_categoria".
+        movimientos : opcional; si se indica, cada alerta incluye
+                      "dias_cobertura" (días que duraría el stock actual al
+                      ritmo de ventas reciente; ver _velocidad_diaria_ventas).
+        ventana_dias: tamaño de la ventana usada para estimar ese ritmo de
+                      ventas (por defecto 60 días).
 
-    Devuelve lista de dicts ordenada ascendente por diferencia (más críticos primero):
+    Cada alerta también incluye "nivel" ("agotado" si stock_actual es 0,
+    "critico" si stock_actual es a lo sumo la mitad del mínimo, "bajo" en
+    el resto de los casos) y "valor_reposicion" (costo estimado, al precio
+    unitario actual, de cubrir el déficit).
+
+    Devuelve lista de dicts ordenada por nivel de gravedad (agotado primero,
+    luego crítico, luego bajo) y, dentro de cada nivel, por diferencia
+    ascendente (más críticos primero):
         [{"codigo": str, "nombre": str, "id_categoria": int,
-          "stock_actual": int, "minimo": int, "diferencia": int}, ...]
+          "nombre_categoria": str, "stock_actual": int, "minimo": int,
+          "diferencia": int, "nivel": str, "valor_reposicion": float,
+          "dias_cobertura": float | None}, ...]
     """
+    nombres_cat = _indice_categorias(categorias) if categorias is not None else {}
+    velocidad = _velocidad_diaria_ventas(movimientos, ventana_dias) if movimientos is not None else {}
+
     alertas = []
     for p in productos:
         minimo = umbral if umbral is not None else p.stock_minimo
-        if p.stock_actual < minimo:
-            alertas.append({
-                "codigo": p.codigo,
-                "nombre": p.nombre,
-                "id_categoria": p.id_categoria,
-                "stock_actual": p.stock_actual,
-                "minimo": minimo,
-                "diferencia": p.stock_actual - minimo,   # siempre negativo aquí
-            })
+        if p.stock_actual >= minimo:
+            continue
 
-    return sorted(alertas, key=lambda r: r["diferencia"])
+        if p.stock_actual == 0:
+            nivel = "agotado"
+        elif p.stock_actual <= minimo * 0.5:
+            nivel = "critico"
+        else:
+            nivel = "bajo"
+
+        vel = velocidad.get(p.codigo)
+
+        alertas.append({
+            "codigo": p.codigo,
+            "nombre": p.nombre,
+            "id_categoria": p.id_categoria,
+            "nombre_categoria": nombres_cat.get(p.id_categoria, f"Categoría {p.id_categoria}"),
+            "stock_actual": p.stock_actual,
+            "minimo": minimo,
+            "diferencia": p.stock_actual - minimo,   # siempre negativo aquí
+            "nivel": nivel,
+            "valor_reposicion": round((minimo - p.stock_actual) * p.precio_unitario, 2),
+            "dias_cobertura": round(p.stock_actual / vel, 1) if vel else None,
+        })
+
+    orden_nivel = {"agotado": 0, "critico": 1, "bajo": 2}
+    return sorted(alertas, key=lambda r: (orden_nivel[r["nivel"]], r["diferencia"]))

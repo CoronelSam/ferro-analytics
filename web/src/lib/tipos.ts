@@ -55,9 +55,13 @@ export interface AlertaStockBajo {
   codigo: string
   nombre: string
   id_categoria: number
+  nombre_categoria: string
   stock_actual: number
   minimo: number
   diferencia: number
+  nivel: 'agotado' | 'critico' | 'bajo'
+  valor_reposicion: number
+  dias_cobertura: number | null
 }
 
 export interface FilaRechazada {

@@ -85,9 +85,13 @@ class AlertaStockBajo(BaseModel):
     codigo: str
     nombre: str
     id_categoria: int
+    nombre_categoria: str
     stock_actual: int
     minimo: int
     diferencia: int
+    nivel: str
+    valor_reposicion: float
+    dias_cobertura: float | None
 
 
 # ──────────────────────────────────────────────

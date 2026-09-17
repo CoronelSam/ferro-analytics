@@ -411,8 +411,8 @@ def _ver_alertas() -> None:
         umbral = _pedir_entero("  Umbral mínimo de stock", minimo=0)
 
     categorias  = alm.leer_categorias()
-    nombres_cat = {c.id: c.nombre for c in categorias}
-    alertas     = rep.alertas_stock_bajo(productos, umbral)
+    movimientos = alm.leer_movimientos()
+    alertas     = rep.alertas_stock_bajo(productos, umbral, categorias=categorias, movimientos=movimientos)
 
     if not alertas:
         print("\n  Todos los productos tienen stock suficiente.")
@@ -420,14 +420,20 @@ def _ver_alertas() -> None:
         return
 
     print(f"\n  {'CÓDIGO':<10} {'NOMBRE':<25} {'CATEGORÍA':<15} "
-          f"{'ACTUAL':>7} {'MÍNIMO':>7} {'DEFICIT':>7}")
+          f"{'ACTUAL':>7} {'MÍNIMO':>7} {'DEFICIT':>7} {'NIVEL':<9} {'COBERTURA':>10}")
     _linea()
     for a in alertas:
-        cat = nombres_cat.get(a["id_categoria"], f"Cat.{a['id_categoria']}")
-        print(f"  {a['codigo']:<10} {a['nombre']:<25} {cat:<15} "
-              f"{a['stock_actual']:>7} {a['minimo']:>7} {a['diferencia']:>7}")
+        cobertura = f"{a['dias_cobertura']:.0f} día(s)" if a["dias_cobertura"] is not None else "s/ventas"
+        print(f"  {a['codigo']:<10} {a['nombre']:<25} {a['nombre_categoria']:<15} "
+              f"{a['stock_actual']:>7} {a['minimo']:>7} {a['diferencia']:>7} "
+              f"{a['nivel']:<9} {cobertura:>10}")
     _linea()
-    print(f"  {len(alertas)} producto(s) con stock bajo.")
+    agotados = sum(1 for a in alertas if a["nivel"] == "agotado")
+    criticos = sum(1 for a in alertas if a["nivel"] == "critico")
+    valor_total = sum(a["valor_reposicion"] for a in alertas)
+    print(f"  {len(alertas)} producto(s) con stock bajo "
+          f"({agotados} agotado(s), {criticos} crítico(s))  |  "
+          f"Costo estimado de reposición: L{valor_total:,.2f}")
     _ofrecer_exportar(alertas, "alertas_stock_bajo")
     _pausar()
 
