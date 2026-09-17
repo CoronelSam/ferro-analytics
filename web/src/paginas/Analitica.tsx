@@ -14,7 +14,7 @@ import { Estado } from '../componentes/Estado'
 import { Cabecera } from '../componentes/Cabecera'
 import { BotonFantasma } from '../componentes/Boton'
 import { Paginador } from '../componentes/Paginador'
-import { IconoDescargar } from '../componentes/Icono'
+import { IconoChevronAbajo, IconoDescargar } from '../componentes/Icono'
 import { formatearLempiras } from '../lib/api'
 import { descargarCSV } from '../lib/csv'
 import { usePaginacion } from '../lib/paginacion'
@@ -53,6 +53,36 @@ const NOMBRES_MODELO: Record<string, string> = {
   media_movil: 'Media móvil',
   suavizado_exponencial: 'Suavizado exponencial',
   regresion: 'Regresión (tendencia + estacionalidad)',
+}
+
+type NivelPrecision = 'buena' | 'aceptable' | 'baja'
+
+const ETIQUETA_PRECISION: Record<NivelPrecision, string> = {
+  buena: 'Precisión alta',
+  aceptable: 'Precisión aceptable',
+  baja: 'Precisión baja',
+}
+
+const ESTILO_PRECISION: Record<NivelPrecision, string> = {
+  buena: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  aceptable: 'bg-amber-50 text-amber-700 border-amber-200',
+  baja: 'bg-orange-50 text-orange-700 border-orange-200',
+}
+
+// Traduce MAPE/MASE (jerga estadística) a un nivel que cualquiera entiende,
+// para no obligar al usuario final a interpretar las métricas crudas.
+function evaluarPrecision(m: ComparacionModelo): NivelPrecision {
+  if (m.mape !== null) {
+    if (m.mape < 10) return 'buena'
+    if (m.mape < 25) return 'aceptable'
+    return 'baja'
+  }
+  if (m.mase !== null) {
+    if (m.mase < 0.7) return 'buena'
+    if (m.mase < 1) return 'aceptable'
+    return 'baja'
+  }
+  return 'aceptable'
 }
 
 export function Analitica() {
@@ -108,14 +138,29 @@ function ClasificacionABCXYZ() {
   const resumen = useResumenABCXYZ()
   const clasificacion = useClasificacionABCXYZ()
   const migraciones = useMigracionesABCXYZ()
+  const prioritarios = useProductosPrioritarios()
 
-  const paginaClasificacion = usePaginacion(clasificacion.data ?? [], FILAS_POR_PAGINA)
+  const [celdaFiltro, setCeldaFiltro] = useState<string | null>(null)
+
+  const clasificacionFiltrada = useMemo(() => {
+    const datos = clasificacion.data ?? []
+    return celdaFiltro ? datos.filter((r) => r.celda === celdaFiltro) : datos
+  }, [clasificacion.data, celdaFiltro])
+
+  const paginaClasificacion = usePaginacion(clasificacionFiltrada, FILAS_POR_PAGINA)
   const paginaMigraciones = usePaginacion(migraciones.data ?? [], FILAS_POR_PAGINA)
+
+  const codigosPrioritarios = useMemo(() => new Set(prioritarios.data ?? []), [prioritarios.data])
 
   const celdas = useMemo(() => {
     const m = new Map(resumen.data?.map((c) => [c.celda, c]))
     return CLASES_ABC.flatMap((abc) => CLASES_XYZ.map((xyz) => m.get(`${abc}${xyz}`)))
   }, [resumen.data])
+
+  function alternarFiltro(clave: string) {
+    setCeldaFiltro((actual) => (actual === clave ? null : clave))
+    paginaClasificacion.irA(1)
+  }
 
   return (
     <Estado cargando={resumen.isLoading || clasificacion.isLoading} error={resumen.error ?? clasificacion.error}>
@@ -123,24 +168,36 @@ function ClasificacionABCXYZ() {
         <p className="text-[12.5px] font-semibold leading-snug text-neutral-500">
           <strong className="text-neutral-700">Prioridad</strong> (Alta/Media/Baja): qué tanto pesa el producto en
           las ventas. <strong className="text-neutral-700">Demanda</strong> (Estable/Variable/Irregular): qué tan
-          predecible es mes a mes.
+          predecible es mes a mes. Tocá una tarjeta para ver solo esos productos en la tabla; los marcados con{' '}
+          <span aria-hidden="true">⭐</span> son los mejores candidatos para pronosticar producto por producto en
+          la pestaña <strong className="text-neutral-700">Predicción de demanda</strong>.
         </p>
 
         <div className="grid grid-cols-3 gap-3">
           {celdas.map((celda, i) => {
             const abc = CLASES_ABC[Math.floor(i / 3)]
             const xyz = CLASES_XYZ[i % 3]
+            const clave = `${abc}${xyz}`
+            const activa = celdaFiltro === clave
             return (
-              <div
-                key={`${abc}${xyz}`}
-                className={`flex flex-col gap-2 rounded-[14px] border p-4 ${COLOR_ABC[abc]}`}
+              <button
+                key={clave}
+                type="button"
+                onClick={() => alternarFiltro(clave)}
+                className={`flex flex-col gap-2 rounded-[14px] border p-4 text-left transition ${COLOR_ABC[abc]} ${
+                  activa
+                    ? 'ring-2 ring-[#124E96] ring-offset-1'
+                    : celdaFiltro
+                      ? 'opacity-50 hover:opacity-80'
+                      : 'hover:-translate-y-0.5 hover:shadow-sm'
+                }`}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex flex-col">
                     <span className="text-sm font-extrabold">
                       {ETIQUETA_ABC[abc]} · {ETIQUETA_XYZ[xyz]}
                     </span>
-                    <span className="text-[10px] font-bold uppercase tracking-wide opacity-60">{abc}{xyz}</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wide opacity-60">{clave}</span>
                   </div>
                   <span className="text-xs font-bold">{celda?.num_productos ?? 0} prod.</span>
                 </div>
@@ -150,16 +207,34 @@ function ClasificacionABCXYZ() {
                 <p className="text-[11.5px] font-semibold leading-snug opacity-80">
                   {celda?.recomendacion ?? 'Sin productos en esta celda.'}
                 </p>
-              </div>
+              </button>
             )
           })}
         </div>
 
+        {celdaFiltro && (
+          <div className="flex items-center gap-2.5 text-[12.5px] font-bold text-[#124E96]">
+            <span>
+              Mostrando {ETIQUETA_ABC[celdaFiltro[0] as ClaseABC]} · {ETIQUETA_XYZ[celdaFiltro[1] as ClaseXYZ]} (
+              {celdaFiltro}) — {clasificacionFiltrada.length} producto{clasificacionFiltrada.length === 1 ? '' : 's'}
+            </span>
+            <button
+              onClick={() => {
+                setCeldaFiltro(null)
+                paginaClasificacion.irA(1)
+              }}
+              className="rounded-full bg-[#EDF3F9] px-2.5 py-1 text-[11px] font-extrabold hover:bg-[#DCE5EF]"
+            >
+              Quitar filtro ✕
+            </button>
+          </div>
+        )}
+
         <Estado
           cargando={false}
           error={null}
-          vacio={clasificacion.data?.length === 0}
-          mensajeVacio="No hay productos clasificados todavía."
+          vacio={clasificacionFiltrada.length === 0}
+          mensajeVacio={celdaFiltro ? 'No hay productos en esta celda.' : 'No hay productos clasificados todavía.'}
         >
           <div className="fa-table-wrap">
             <table className="w-full text-sm">
@@ -167,33 +242,69 @@ function ClasificacionABCXYZ() {
                 <tr>
                   <th className="px-4 py-2.5">Código</th>
                   <th className="px-4 py-2.5">Nombre</th>
-                  <th className="px-4 py-2.5 text-right">Valor de consumo</th>
-                  <th className="px-4 py-2.5">Prioridad</th>
-                  <th className="px-4 py-2.5">Demanda</th>
-                  <th className="px-4 py-2.5 text-right">CV demanda</th>
+                  <th
+                    className="px-4 py-2.5 text-right"
+                    title="Unidades vendidas × precio actual, sumado en todo el historial disponible."
+                  >
+                    Valor de consumo
+                  </th>
+                  <th
+                    className="px-4 py-2.5"
+                    title="Pasá el mouse sobre cada etiqueta para ver la recomendación completa."
+                  >
+                    Prioridad
+                  </th>
+                  <th
+                    className="px-4 py-2.5"
+                    title="Qué tan pareja es la demanda mes a mes. Pasá el mouse sobre cada fila para ver el detalle numérico (coeficiente de variación)."
+                  >
+                    Demanda
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-100">
-                {paginaClasificacion.items.map((r) => (
-                  <tr key={r.codigo}>
-                    <td className="px-4 py-3 font-mono text-xs font-bold text-[#3E536C]">{r.codigo}</td>
-                    <td className="px-4 py-3 text-[13px] font-bold text-[#13233A]">{r.nombre}</td>
-                    <td className="px-4 py-3 text-right text-[13px] font-bold text-[#13233A]">
-                      {formatearLempiras(r.valor_consumo)}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`rounded-full border px-2.5 py-1 text-xs font-extrabold ${COLOR_ABC[r.clase_abc]}`}>
-                        {ETIQUETA_ABC[r.clase_abc]} ({r.clase_abc})
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-[13px] font-semibold text-neutral-600">
-                      {ETIQUETA_XYZ[r.clase_xyz]} ({r.clase_xyz})
-                    </td>
-                    <td className="px-4 py-3 text-right text-[13px] font-semibold text-neutral-600">
-                      {r.cv_demanda ?? '—'}
-                    </td>
-                  </tr>
-                ))}
+                {paginaClasificacion.items.map((r) => {
+                  const prioritario = codigosPrioritarios.has(r.codigo)
+                  return (
+                    <tr key={r.codigo} className={prioritario ? 'bg-emerald-50/40' : ''}>
+                      <td className="px-4 py-3 font-mono text-xs font-bold text-[#3E536C]">
+                        <span className="flex items-center gap-1.5">
+                          {r.codigo}
+                          {prioritario && (
+                            <span
+                              aria-hidden="true"
+                              title="Alta prioridad y demanda estable: buen candidato para pronosticar producto por producto en la pestaña Predicción de demanda."
+                            >
+                              ⭐
+                            </span>
+                          )}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-[13px] font-bold text-[#13233A]">{r.nombre}</td>
+                      <td className="px-4 py-3 text-right text-[13px] font-bold text-[#13233A]">
+                        {formatearLempiras(r.valor_consumo)}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span
+                          title={r.recomendacion}
+                          className={`rounded-full border px-2.5 py-1 text-xs font-extrabold ${COLOR_ABC[r.clase_abc]}`}
+                        >
+                          {ETIQUETA_ABC[r.clase_abc]} ({r.clase_abc})
+                        </span>
+                      </td>
+                      <td
+                        className="px-4 py-3 text-[13px] font-semibold text-neutral-600"
+                        title={
+                          r.cv_demanda !== null
+                            ? `Coeficiente de variación: ${r.cv_demanda}`
+                            : 'Sin demanda suficiente para calcular la variación.'
+                        }
+                      >
+                        {ETIQUETA_XYZ[r.clase_xyz]} ({r.clase_xyz})
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
             <Paginador
@@ -211,8 +322,8 @@ function ClasificacionABCXYZ() {
             <div>
               <h2 className="text-sm font-extrabold text-neutral-900">Migraciones de celda</h2>
               <p className="text-xs font-semibold text-neutral-500">
-                Productos que cambiaron de celda ABC-XYZ respecto al mes calendario anterior
-                (ventana móvil de 12 meses; p. ej. AX → AZ es una alerta más fuerte que el corte transversal solo)
+                Productos cuya prioridad o nivel de demanda cambió de un mes a otro (comparando los últimos 12
+                meses). Por ejemplo, pasar de Alta y estable a Alta e irregular es una alerta importante.
               </p>
             </div>
             <BotonFantasma
@@ -289,6 +400,7 @@ function PrediccionDemanda() {
   const [codigoProducto, setCodigoProducto] = useState<string | null>(null)
   const [n, setN] = useState(3)
   const [tiempoEntregaDias, setTiempoEntregaDias] = useState(7)
+  const [detalleTecnicoAbierto, setDetalleTecnicoAbierto] = useState(false)
 
   const primeraCategoria = categorias.data?.[0]?.id ?? null
   const primerProducto = prioritarios.data?.[0] ?? null
@@ -335,8 +447,21 @@ function PrediccionDemanda() {
     }))
   }, [resultado])
 
+  const metricaMejorModelo = resultado
+    ? resultado.comparacion_modelos.find((m) => m.modelo === resultado.mejor_modelo)
+    : undefined
+  const nivelPrecision = metricaMejorModelo ? evaluarPrecision(metricaMejorModelo) : null
+
   return (
     <div className="flex flex-col gap-5">
+      <p className="text-[12.5px] font-semibold leading-snug text-neutral-500">
+        Con base en las ventas de los últimos meses, así se ve la demanda esperada a futuro.{' '}
+        <strong className="text-neutral-700">Línea sólida</strong>: lo que realmente se vendió.{' '}
+        <strong className="text-neutral-700">Línea punteada</strong>: la proyección.{' '}
+        <strong className="text-neutral-700">Área sombreada</strong>: el rango donde probablemente caerá la
+        demanda real (no es un número exacto).
+      </p>
+
       <div className="flex flex-wrap items-end gap-4 fa-card px-6 py-5">
         <Campo etiqueta="Alcance">
           <div className="flex gap-0.5 rounded-[9px] bg-[#EDF3F9] p-[3px]">
@@ -418,50 +543,53 @@ function PrediccionDemanda() {
       >
         {resultado && (
           <div className="flex flex-col gap-5">
-            <div className="h-80 fa-card p-6">
-              <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={datosGrafico}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e5e5" />
-                  <XAxis dataKey="mes" fontSize={10.5} fontWeight={600} stroke="#a3a3a3" tickLine={false} />
-                  <YAxis fontSize={11} stroke="#a3a3a3" tickLine={false} axisLine={false} />
-                  <Tooltip
-                    formatter={(valor: unknown, nombre: unknown) =>
-                      Array.isArray(valor)
-                        ? [`${valor[0]} – ${valor[1]} uds`, nombre as string]
-                        : [valor as number, nombre as string]
-                    }
-                  />
-                  <Legend wrapperStyle={{ fontSize: 12.5, fontWeight: 700 }} />
-                  <Area
-                    type="monotone"
-                    dataKey="banda"
-                    name="Banda de confianza (95%)"
-                    stroke="none"
-                    fill="#2a78d6"
-                    fillOpacity={0.12}
-                    isAnimationActive={false}
-                  />
-                  <Line type="monotone" dataKey="real" name="Demanda real" stroke="#171717" strokeWidth={2.25} dot={false} />
-                  <Line
-                    type="monotone"
-                    dataKey="pronostico"
-                    name="Pronóstico"
-                    stroke="#2a78d6"
-                    strokeWidth={2.25}
-                    strokeDasharray="5 5"
-                    dot={false}
-                  />
-                </ComposedChart>
-              </ResponsiveContainer>
+            <div className="fa-card p-6">
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart data={datosGrafico}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e5e5" />
+                    <XAxis dataKey="mes" fontSize={10.5} fontWeight={600} stroke="#a3a3a3" tickLine={false} />
+                    <YAxis fontSize={11} stroke="#a3a3a3" tickLine={false} axisLine={false} />
+                    <Tooltip
+                      formatter={(valor: unknown, nombre: unknown) =>
+                        Array.isArray(valor)
+                          ? [`${valor[0]} – ${valor[1]} uds`, nombre as string]
+                          : [valor as number, nombre as string]
+                      }
+                    />
+                    <Legend wrapperStyle={{ fontSize: 12.5, fontWeight: 700 }} />
+                    <Area
+                      type="monotone"
+                      dataKey="banda"
+                      name="Rango probable"
+                      stroke="none"
+                      fill="#2a78d6"
+                      fillOpacity={0.12}
+                      isAnimationActive={false}
+                    />
+                    <Line type="monotone" dataKey="real" name="Demanda real" stroke="#171717" strokeWidth={2.25} dot={false} />
+                    <Line
+                      type="monotone"
+                      dataKey="pronostico"
+                      name="Pronóstico"
+                      stroke="#2a78d6"
+                      strokeWidth={2.25}
+                      strokeDasharray="5 5"
+                      dot={false}
+                    />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
             </div>
 
             <div className="flex items-stretch gap-5">
               <div className="flex-1 fa-table-wrap">
                 <div className="flex items-center justify-between border-b border-[#EDF2F7] px-5 py-3.5">
                   <div>
-                    <h2 className="text-sm font-extrabold text-[#13233A]">Comparación de modelos</h2>
+                    <h2 className="text-sm font-extrabold text-[#13233A]">¿Cómo se calculó este pronóstico?</h2>
                     <p className="text-xs font-semibold text-[#6D7B8F]">
-                      Backtest sobre los últimos meses (MAE, MAPE y MASE, menor es mejor; MASE &lt; 1 supera al ingenuo)
+                      Se probaron varias formas de proyectar la demanda contra las ventas reales más recientes y se
+                      usó la que más acertó.
                     </p>
                   </div>
                   <BotonFantasma
@@ -477,37 +605,87 @@ function PrediccionDemanda() {
                     Exportar
                   </BotonFantasma>
                 </div>
-                <table className="w-full text-sm">
-                  <thead className="text-left text-[10.5px] font-extrabold uppercase tracking-wide text-[#6D7B8F]">
-                    <tr>
-                      <th className="px-5 py-2">Modelo</th>
-                      <th className="px-5 py-2 text-right">MAE</th>
-                      <th className="px-5 py-2 text-right">MAPE</th>
-                      <th className="px-5 py-2 text-right">MASE</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-neutral-100">
-                    {resultado.comparacion_modelos.map((m: ComparacionModelo) => (
-                      <tr key={m.modelo} className={m.modelo === resultado.mejor_modelo ? 'bg-emerald-50' : ''}>
-                        <td className="px-5 py-2.5 text-[13px] font-bold text-[#243B55]">
-                          {NOMBRES_MODELO[m.modelo] ?? m.modelo}
-                          {m.modelo === resultado.mejor_modelo && (
-                            <span className="ml-2 rounded-full bg-emerald-600 px-2 py-0.5 text-[10px] font-extrabold text-white">
-                              MEJOR
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-5 py-2.5 text-right text-[13px] font-semibold text-[#3E536C]">{m.mae}</td>
-                        <td className="px-5 py-2.5 text-right text-[13px] font-semibold text-[#3E536C]">
-                          {m.mape !== null ? `${m.mape}%` : '—'}
-                        </td>
-                        <td className="px-5 py-2.5 text-right text-[13px] font-semibold text-neutral-700">
-                          {m.mase ?? '—'}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+
+                <div className="flex flex-col gap-3 px-5 py-4">
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    {nivelPrecision && (
+                      <span
+                        className={`rounded-full border px-2.5 py-1 text-xs font-extrabold ${ESTILO_PRECISION[nivelPrecision]}`}
+                      >
+                        {ETIQUETA_PRECISION[nivelPrecision]}
+                      </span>
+                    )}
+                    <span className="text-[13px] font-bold text-[#13233A]">
+                      Método usado: {NOMBRES_MODELO[resultado.mejor_modelo] ?? resultado.mejor_modelo}
+                    </span>
+                  </div>
+
+                  {metricaMejorModelo && (
+                    <p className="text-[13px] font-semibold leading-relaxed text-[#3E536C]">
+                      Al comparar sus proyecciones contra lo que realmente se vendió en meses recientes, se
+                      equivocó en promedio por <strong className="text-[#13233A]">{metricaMejorModelo.mae} unidades</strong>
+                      {metricaMejorModelo.mape !== null && (
+                        <>
+                          {' '}(alrededor de <strong className="text-[#13233A]">{metricaMejorModelo.mape}%</strong>{' '}
+                          del total)
+                        </>
+                      )}{' '}
+                      por mes.
+                    </p>
+                  )}
+
+                  <button
+                    onClick={() => setDetalleTecnicoAbierto((v) => !v)}
+                    className="flex w-fit items-center gap-1.5 text-[12px] font-bold text-[#124E96]"
+                  >
+                    {detalleTecnicoAbierto ? 'Ocultar' : 'Ver'} comparación técnica de los modelos
+                    <IconoChevronAbajo
+                      size={11}
+                      className={`transition-transform ${detalleTecnicoAbierto ? 'rotate-180' : ''}`}
+                    />
+                  </button>
+                </div>
+
+                {detalleTecnicoAbierto && (
+                  <div className="border-t border-[#EDF2F7]">
+                    <p className="px-5 pt-3 text-[11px] font-semibold leading-snug text-[#6D7B8F]">
+                      MAE: error promedio en unidades. MAPE: error promedio en porcentaje. En ambos, menor es mejor.
+                      MASE: compara contra el método más simple posible (repetir el último valor); por debajo de 1
+                      significa que el modelo elegido le gana a esa referencia.
+                    </p>
+                    <table className="w-full text-sm">
+                      <thead className="text-left text-[10.5px] font-extrabold uppercase tracking-wide text-[#6D7B8F]">
+                        <tr>
+                          <th className="px-5 py-2">Modelo</th>
+                          <th className="px-5 py-2 text-right">MAE</th>
+                          <th className="px-5 py-2 text-right">MAPE</th>
+                          <th className="px-5 py-2 text-right">MASE</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-neutral-100">
+                        {resultado.comparacion_modelos.map((m: ComparacionModelo) => (
+                          <tr key={m.modelo} className={m.modelo === resultado.mejor_modelo ? 'bg-emerald-50' : ''}>
+                            <td className="px-5 py-2.5 text-[13px] font-bold text-[#243B55]">
+                              {NOMBRES_MODELO[m.modelo] ?? m.modelo}
+                              {m.modelo === resultado.mejor_modelo && (
+                                <span className="ml-2 rounded-full bg-emerald-600 px-2 py-0.5 text-[10px] font-extrabold text-white">
+                                  MEJOR
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-5 py-2.5 text-right text-[13px] font-semibold text-[#3E536C]">{m.mae}</td>
+                            <td className="px-5 py-2.5 text-right text-[13px] font-semibold text-[#3E536C]">
+                              {m.mape !== null ? `${m.mape}%` : '—'}
+                            </td>
+                            <td className="px-5 py-2.5 text-right text-[13px] font-semibold text-neutral-700">
+                              {m.mase ?? '—'}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
 
               {'punto_reorden' in resultado && (
