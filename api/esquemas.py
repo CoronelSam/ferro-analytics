@@ -135,6 +135,14 @@ class CeldaResumen(BaseModel):
     recomendacion: str
 
 
+class MigracionCelda(BaseModel):
+    mes: str
+    codigo: str
+    nombre: str
+    celda_anterior: str
+    celda_nueva: str
+
+
 # ──────────────────────────────────────────────
 # Analítica: predicción de demanda (src/prediccion.py)
 # ──────────────────────────────────────────────
@@ -143,6 +151,12 @@ class ComparacionModelo(BaseModel):
     modelo: str
     mae: float
     mape: float | None
+    mase: float | None
+
+
+class IntervaloConfianza(BaseModel):
+    limite_inferior: float
+    limite_superior: float
 
 
 class PuntoMensual(BaseModel):
@@ -157,6 +171,7 @@ class PronosticoCategoria(BaseModel):
     comparacion_modelos: list[ComparacionModelo]
     mejor_modelo: str
     pronostico: list[float]
+    intervalo_confianza: list[IntervaloConfianza]
     serie_historica: list[PuntoMensual]
 
 
@@ -166,6 +181,7 @@ class PronosticoProducto(BaseModel):
     comparacion_modelos: list[ComparacionModelo]
     mejor_modelo: str
     pronostico: list[float]
+    intervalo_confianza: list[IntervaloConfianza]
     serie_historica: list[PuntoMensual]
     demanda_diaria_media: float
     demanda_diaria_desviacion: float

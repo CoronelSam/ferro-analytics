@@ -123,6 +123,14 @@ La documentación interactiva de la API queda en http://127.0.0.1:8000/docs. Los
 
 Ábrelos en VS Code o Jupyter con el kernel del `.venv`.
 
+### Pruebas de la API (pytest)
+
+```bash
+pytest
+```
+
+`tests/` usa `fastapi.testclient.TestClient` contra `api/main.py`: cada prueba corre con `FERRO_BINARIOS` apuntando a un directorio temporal propio (ver `tests/conftest.py`), así que nunca toca `data/binarios/` ni el histórico. Cubre importación de CSV (alta, upsert, duplicados, filas rechazadas), consulta y filtrado de movimientos, lotes y su reversión, los cuatro reportes, y clasificación/predicción de la Fase II (incluyendo el 422 de `DatosInsuficientes` cuando no hay historial suficiente).
+
 ## Formato de los CSV de entrada
 
 Codificación UTF-8, con encabezado en la primera fila. Las fechas usan el formato `AAAA-MM-DD`.

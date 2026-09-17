@@ -122,10 +122,24 @@ export interface CeldaResumen {
   recomendacion: string
 }
 
+export interface MigracionCelda {
+  mes: string
+  codigo: string
+  nombre: string
+  celda_anterior: string
+  celda_nueva: string
+}
+
 export interface ComparacionModelo {
-  modelo: 'ingenuo' | 'media_movil' | 'suavizado_exponencial' | 'regresion'
+  modelo: 'ingenuo' | 'media_movil' | 'suavizado_exponencial' | 'naive_estacional' | 'regresion'
   mae: number
   mape: number | null
+  mase: number | null
+}
+
+export interface IntervaloConfianza {
+  limite_inferior: number
+  limite_superior: number
 }
 
 export interface PuntoMensual {
@@ -140,6 +154,7 @@ export interface PronosticoCategoria {
   comparacion_modelos: ComparacionModelo[]
   mejor_modelo: string
   pronostico: number[]
+  intervalo_confianza: IntervaloConfianza[]
   serie_historica: PuntoMensual[]
 }
 
@@ -149,6 +164,7 @@ export interface PronosticoProducto {
   comparacion_modelos: ComparacionModelo[]
   mejor_modelo: string
   pronostico: number[]
+  intervalo_confianza: IntervaloConfianza[]
   serie_historica: PuntoMensual[]
   demanda_diaria_media: number
   demanda_diaria_desviacion: number

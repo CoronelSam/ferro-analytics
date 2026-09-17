@@ -320,3 +320,111 @@ def resumen_matriz(clasificacion: list) -> list:
         celda["valor_consumo_total"] = round(celda["valor_consumo_total"], 2)
 
     return sorted(celdas.values(), key=lambda c: (c["clase_abc"], c["clase_xyz"]))
+
+
+# ──────────────────────────────────────────────
+# Migración de celdas mes a mes
+# ──────────────────────────────────────────────
+# clasificar_abc_xyz() mira todo el historial de una sola vez: no puede
+# mostrar que un producto pasó, por ejemplo, de AX (prioridad alta, demanda
+# estable) a AZ (prioridad alta, ahora impredecible) — una señal de alerta
+# operativa más fuerte que su celda actual sola. Estas dos funciones
+# recalculan la matriz con una ventana móvil, mes a mes, para poder
+# comparar una corrida contra la anterior.
+
+VENTANA_MIGRACION_MESES = 12
+
+
+def _clave_mes(fecha: str) -> tuple:
+    """(anio, mes) a partir de una fecha 'AAAA-MM-DD'."""
+    f = datetime.strptime(fecha, "%Y-%m-%d").date()
+    return (f.year, f.month)
+
+
+def _mes_siguiente(mes: tuple) -> tuple:
+    anio, m = mes
+    return (anio + 1, 1) if m == 12 else (anio, m + 1)
+
+
+def clasificacion_por_mes(
+    productos: list,
+    movimientos: list,
+    ventana_meses: int = VENTANA_MIGRACION_MESES,
+) -> dict:
+    """
+    Recalcula la clasificación ABC-XYZ para cada mes del histórico, usando
+    solo los `ventana_meses` meses anteriores a ese mes (12 por defecto, un
+    ciclo estacional) en vez de todo el historial acumulado.
+
+    El precio usado es siempre el actual del catálogo (no se guarda
+    histórico de precios), igual que en clasificar_abc().
+
+    Recibe:
+        productos    : catálogo actual.
+        movimientos  : historial completo de movimientos.
+        ventana_meses: cantidad de meses que entran en cada corrida mensual.
+
+    Devuelve {(anio, mes): clasificacion}, una entrada por cada mes del
+    período que tenga al menos `ventana_meses` completos por detrás (los
+    primeros meses del histórico no alcanzan ventana y quedan fuera; si
+    ningún mes de una corrida tiene datos suficientes, esa corrida
+    simplemente no aparece en el resultado).
+    """
+    meses = meses_periodo(movimientos)
+    resultado = {}
+    for i, mes in enumerate(meses):
+        if i + 1 < ventana_meses:
+            continue
+        ventana = set(meses[i + 1 - ventana_meses: i + 1])
+        movimientos_ventana = [m for m in movimientos if _clave_mes(m.fecha) in ventana]
+        try:
+            resultado[mes] = clasificar_abc_xyz(productos, movimientos_ventana)
+        except DatosInsuficientes:
+            continue
+    return resultado
+
+
+def migraciones(
+    productos: list,
+    movimientos: list,
+    ventana_meses: int = VENTANA_MIGRACION_MESES,
+) -> list:
+    """
+    Compara, mes a mes, la clasificación de clasificacion_por_mes() contra
+    la del mes calendario anterior y reporta los productos cuya celda
+    cambió: la señal de alerta que una sola corrida transversal
+    (clasificar_abc_xyz) no puede mostrar.
+
+    Recibe:
+        productos, movimientos: catálogo e historial completos.
+        ventana_meses         : ver clasificacion_por_mes().
+
+    Devuelve una lista ordenada por mes y código, cada entrada:
+        {"mes": "AAAA-MM", "codigo": str, "nombre": str,
+         "celda_anterior": str, "celda_nueva": str}
+
+    Solo compara meses calendario consecutivos (sin huecos entre ambas
+    corridas) y productos presentes en las dos. No lanza DatosInsuficientes:
+    si no hay historial suficiente para ninguna comparación, devuelve una
+    lista vacía (la ausencia de migraciones también es una respuesta válida).
+    """
+    matriz = clasificacion_por_mes(productos, movimientos, ventana_meses)
+
+    resultado = []
+    for anterior in sorted(matriz):
+        actual = _mes_siguiente(anterior)
+        if actual not in matriz:
+            continue
+        celdas_anteriores = {r["codigo"]: r["celda"] for r in matriz[anterior]}
+        for r in matriz[actual]:
+            celda_previa = celdas_anteriores.get(r["codigo"])
+            if celda_previa and celda_previa != r["celda"]:
+                resultado.append({
+                    "mes": f"{actual[0]}-{actual[1]:02d}",
+                    "codigo": r["codigo"],
+                    "nombre": r["nombre"],
+                    "celda_anterior": celda_previa,
+                    "celda_nueva": r["celda"],
+                })
+
+    return sorted(resultado, key=lambda r: (r["mes"], r["codigo"]))

@@ -2,14 +2,16 @@
 Predicción de demanda para FerroAnalytics (Fase II).
 
 Construye series mensuales de demanda por categoría y por producto, compara
-cuatro modelos de pronóstico mediante backtesting (MAE y MAPE), y calcula el
-punto de reorden y el stock de seguridad de un producto a partir de su
-demanda diaria observada.
+cinco modelos de pronóstico mediante backtesting (MAE, MAPE y MASE), agrega
+una banda de confianza alrededor del pronóstico y calcula el punto de
+reorden y el stock de seguridad de un producto a partir de su demanda diaria
+observada.
 
-Se comparan tres modelos base (ingenuo, media móvil, suavizado exponencial
-simple) contra una regresión con tendencia y estacionalidad mensual; esta
-última necesita más historial (ver MINIMO_MESES_HISTORIAL) porque estima
-una tendencia más 11 factores estacionales.
+Se comparan cuatro modelos base (ingenuo, naive estacional, media móvil,
+suavizado exponencial simple) contra una regresión con tendencia y
+estacionalidad mensual; esta última necesita más historial (ver
+MINIMO_MESES_HISTORIAL) porque estima una tendencia más 11 factores
+estacionales.
 
 Como en clasificacion.py, la fecha de referencia es la del último
 movimiento registrado, no date.today().
@@ -37,6 +39,7 @@ MINIMO_MESES_CON_DATOS = 6
 
 VENTANA_MEDIA_MOVIL = 3
 ALPHA_SUAVIZADO = 0.3
+PERIODO_ESTACIONAL = 12
 
 
 # ──────────────────────────────────────────────
@@ -142,6 +145,30 @@ def pronostico_suavizado_exponencial(serie: list, n: int = 1, alpha: float = ALP
     return [nivel] * n
 
 
+def pronostico_naive_estacional(serie: list, n: int = 1, periodo: int = PERIODO_ESTACIONAL) -> list:
+    """
+    Repite el valor del mismo mes del ciclo estacional anterior (mismo mes,
+    año anterior), en vez de solo el último valor observado (pronostico_ingenuo):
+    referencia más justa que un modelo con tendencia/estacionalidad debe
+    superar en una ferretería con temporadas marcadas (lluvias, fin de año
+    de construcción, etc.).
+
+    Recibe:
+        serie  : valores mensuales consecutivos y sin huecos.
+        n      : cantidad de períodos futuros a pronosticar (se asume <= periodo;
+                 es el caso de la API, que limita n a 12 meses).
+        periodo: longitud del ciclo estacional en meses (12 por defecto).
+
+    Lanza DatosInsuficientes si la serie no cubre un ciclo completo.
+    """
+    if len(serie) < periodo:
+        raise DatosInsuficientes(
+            f"Se necesitan al menos {periodo} meses de historial para el naive "
+            f"estacional (hay {len(serie)})."
+        )
+    return [float(serie[len(serie) - periodo + (i % periodo)]) for i in range(n)]
+
+
 def pronostico_regresion(serie: list, n: int = 1) -> list:
     """
     Regresión lineal con tendencia (índice temporal) y estacionalidad
@@ -183,6 +210,7 @@ MODELOS = {
     "ingenuo": pronostico_ingenuo,
     "media_movil": pronostico_media_movil,
     "suavizado_exponencial": pronostico_suavizado_exponencial,
+    "naive_estacional": pronostico_naive_estacional,
     "regresion": pronostico_regresion,
 }
 
@@ -204,6 +232,32 @@ def _mape(reales: list, pronosticados: list) -> float | None:
     return statistics.mean(errores) * 100 if errores else None
 
 
+def _mase(reales: list, pronosticados: list, entrenamiento: list) -> float | None:
+    """
+    Error absoluto medio escalado (Hyndman & Koehler, 2006): el MAE del
+    modelo sobre el período de prueba, dividido entre el MAE de un
+    pronóstico ingenuo de un paso (|y_t - y_(t-1)|) calculado únicamente
+    sobre el período de entrenamiento (evita fuga de datos del backtest).
+
+    A diferencia de MAPE, no se indefine con demanda real 0 y es
+    comparable entre productos con escalas muy distintas: MASE < 1
+    significa que el modelo es mejor que ese ingenuo de referencia; > 1,
+    que es peor.
+
+    Devuelve None si el entrenamiento tiene menos de 2 meses o es
+    constante (el ingenuo de referencia nunca se equivoca: escala 0).
+    """
+    if len(entrenamiento) < 2:
+        return None
+    diferencias = [
+        abs(entrenamiento[t] - entrenamiento[t - 1]) for t in range(1, len(entrenamiento))
+    ]
+    escala = statistics.mean(diferencias)
+    if escala == 0:
+        return None
+    return _mae(reales, pronosticados) / escala
+
+
 def backtest(serie: list, modelo, n_prueba: int = 3) -> dict:
     """
     Evalúa un modelo de pronóstico dejando fuera los últimos `n_prueba`
@@ -215,7 +269,7 @@ def backtest(serie: list, modelo, n_prueba: int = 3) -> dict:
         modelo  : función pronostico_*(serie, n) -> list[float].
         n_prueba: cantidad de meses finales a dejar fuera para probar.
 
-    Devuelve {"mae": float, "mape": float | None}.
+    Devuelve {"mae": float, "mape": float | None, "mase": float | None}.
 
     Lanza DatosInsuficientes si no quedan suficientes meses de entrenamiento
     para el modelo indicado.
@@ -229,9 +283,11 @@ def backtest(serie: list, modelo, n_prueba: int = 3) -> dict:
     pronosticados = modelo(entrenamiento, n=n_prueba)
 
     mape = _mape(prueba, pronosticados)
+    mase = _mase(prueba, pronosticados, entrenamiento)
     return {
         "mae": round(_mae(prueba, pronosticados), 3),
         "mape": round(mape, 2) if mape is not None else None,
+        "mase": round(mase, 3) if mase is not None else None,
     }
 
 
@@ -244,11 +300,13 @@ def comparar_modelos(serie: list, n_prueba: int = 3) -> list:
         serie   : valores mensuales consecutivos y sin huecos.
         n_prueba: cantidad de meses finales a dejar fuera para el backtest.
 
-    Devuelve lista de dicts: [{"modelo": str, "mae": float, "mape": float | None}, ...]
+    Devuelve lista de dicts:
+        [{"modelo": str, "mae": float, "mape": float | None, "mase": float | None}, ...]
 
     Un modelo sin historial suficiente para evaluarse (p. ej. la regresión
-    sobre series cortas) se omite en vez de interrumpir a los demás.
-    Lanza DatosInsuficientes si ninguno pudo evaluarse.
+    o el naive estacional sobre series cortas) se omite en vez de
+    interrumpir a los demás. Lanza DatosInsuficientes si ninguno pudo
+    evaluarse.
     """
     resultados = []
     for nombre, funcion in MODELOS.items():
@@ -262,6 +320,63 @@ def comparar_modelos(serie: list, n_prueba: int = 3) -> list:
         raise DatosInsuficientes("Ningún modelo pudo evaluarse: la serie es demasiado corta.")
 
     return sorted(resultados, key=lambda r: r["mae"])
+
+
+# ──────────────────────────────────────────────
+# Intervalos de confianza del pronóstico
+# ──────────────────────────────────────────────
+
+def _desviacion_residual(serie: list, modelo, n_prueba: int) -> float:
+    """
+    Desviación estándar de los errores (real - pronóstico) del modelo
+    ganador sobre su propio backtest, para estimar la incertidumbre del
+    pronóstico futuro (ver _intervalos_confianza). Repite el mismo split
+    que backtest() en vez de reutilizar su resultado porque backtest() solo
+    devuelve las métricas agregadas, no los errores mes a mes.
+    """
+    entrenamiento = serie[:-n_prueba]
+    prueba = serie[-n_prueba:]
+    pronosticados = modelo(entrenamiento, n=n_prueba)
+    errores = [real - pron for real, pron in zip(prueba, pronosticados)]
+    return statistics.pstdev(errores) if len(errores) > 1 else 0.0
+
+
+def _intervalos_confianza(
+    pronostico: list, desviacion_residual: float, nivel_confianza: float = 0.95,
+) -> list[dict]:
+    """
+    Banda de confianza alrededor de cada valor pronosticado, con el mismo
+    criterio que calcular_punto_reorden(): un cuantil de la normal (z) por
+    una desviación, ensanchada con la raíz del horizonte (igual que el
+    stock de seguridad crece con √tiempo_entrega_dias) para reflejar que la
+    incertidumbre aumenta cuanto más lejos se pronostica.
+
+    Es una aproximación, no una banda estadísticamente exacta: asume
+    errores normales e independientes mes a mes con la misma desviación
+    observada en el backtest, lo cual alcanza para comunicar incertidumbre
+    creciente en el dashboard sin la complejidad de un modelo de series de
+    tiempo probabilístico completo.
+
+    Recibe:
+        pronostico          : valores puntuales pronosticados (uno por mes).
+        desviacion_residual : desviación estándar de los errores del
+                               modelo ganador sobre su propio backtest
+                               (ver _desviacion_residual).
+        nivel_confianza      : probabilidad deseada de que la demanda real
+                               caiga dentro de la banda (0-1; 0.95 por defecto).
+
+    Devuelve una lista de dicts {"limite_inferior", "limite_superior"}, en
+    el mismo orden que `pronostico`. Los límites nunca son negativos.
+    """
+    z = statistics.NormalDist().inv_cdf((1 + nivel_confianza) / 2)
+    intervalos = []
+    for paso, valor in enumerate(pronostico, start=1):
+        ancho = z * desviacion_residual * math.sqrt(paso)
+        intervalos.append({
+            "limite_inferior": round(max(0.0, valor - ancho), 2),
+            "limite_superior": round(valor + ancho, 2),
+        })
+    return intervalos
 
 
 # ──────────────────────────────────────────────
@@ -360,6 +475,7 @@ def pronosticar_producto(
     n_prueba: int = 3,
     tiempo_entrega_dias: int = 7,
     nivel_servicio: float = 0.95,
+    nivel_confianza: float = 0.95,
 ) -> dict:
     """
     Pronóstico de demanda mensual de un producto: compara los cuatro
@@ -374,9 +490,13 @@ def pronosticar_producto(
         tiempo_entrega_dias   : tiempo de entrega del proveedor, en días.
         nivel_servicio        : nivel de servicio deseado (0-1) para el
                                  stock de seguridad.
+        nivel_confianza       : nivel de confianza (0-1) de la banda
+                                 alrededor del pronóstico (ver
+                                 _intervalos_confianza).
 
     Devuelve un dict con "codigo", "meses_pronosticados", "comparacion_modelos",
-    "mejor_modelo", "pronostico" y las claves de calcular_punto_reorden().
+    "mejor_modelo", "pronostico", "intervalo_confianza" y las claves de
+    calcular_punto_reorden().
 
     Lanza DatosInsuficientes si el historial del producto es muy corto.
     """
@@ -387,6 +507,7 @@ def pronosticar_producto(
     comparacion = comparar_modelos(serie, n_prueba=n_prueba)
     mejor = comparacion[0]["modelo"]
     pronostico = MODELOS[mejor](serie, n=n)
+    desviacion_residual = _desviacion_residual(serie, MODELOS[mejor], n_prueba)
     reorden = calcular_punto_reorden(movimientos, codigo, tiempo_entrega_dias, nivel_servicio)
 
     return {
@@ -395,6 +516,7 @@ def pronosticar_producto(
         "comparacion_modelos": comparacion,
         "mejor_modelo": mejor,
         "pronostico": [round(v, 2) for v in pronostico],
+        "intervalo_confianza": _intervalos_confianza(pronostico, desviacion_residual, nivel_confianza),
         **reorden,
     }
 
@@ -406,6 +528,7 @@ def pronosticar_categoria(
     id_categoria: int,
     n: int = 1,
     n_prueba: int = 3,
+    nivel_confianza: float = 0.95,
 ) -> dict:
     """
     Pronóstico de demanda mensual de una categoría completa: compara los
@@ -416,9 +539,13 @@ def pronosticar_categoria(
         id_categoria                      : id de la categoría a pronosticar.
         n                                  : cantidad de meses futuros.
         n_prueba                           : meses finales usados para el backtest.
+        nivel_confianza                    : nivel de confianza (0-1) de la
+                                              banda alrededor del pronóstico
+                                              (ver _intervalos_confianza).
 
     Devuelve un dict con "id_categoria", "nombre_categoria",
-    "meses_pronosticados", "comparacion_modelos", "mejor_modelo" y "pronostico".
+    "meses_pronosticados", "comparacion_modelos", "mejor_modelo",
+    "pronostico" e "intervalo_confianza".
 
     Lanza DatosInsuficientes si el historial de la categoría es muy corto.
     """
@@ -430,6 +557,7 @@ def pronosticar_categoria(
     comparacion = comparar_modelos(serie, n_prueba=n_prueba)
     mejor = comparacion[0]["modelo"]
     pronostico = MODELOS[mejor](serie, n=n)
+    desviacion_residual = _desviacion_residual(serie, MODELOS[mejor], n_prueba)
 
     return {
         "id_categoria": id_categoria,
@@ -438,4 +566,5 @@ def pronosticar_categoria(
         "comparacion_modelos": comparacion,
         "mejor_modelo": mejor,
         "pronostico": [round(v, 2) for v in pronostico],
+        "intervalo_confianza": _intervalos_confianza(pronostico, desviacion_residual, nivel_confianza),
     }

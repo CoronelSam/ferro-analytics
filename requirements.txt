@@ -17,5 +17,9 @@ python-dotenv>=1.0
 # Notebooks de pruebas
 ipykernel>=7.3
 
+# Pruebas automatizadas de la API (Fase II)
+pytest>=8.0
+httpx>=0.27
+
 # API del dashboard
 -r requirements-api.txt

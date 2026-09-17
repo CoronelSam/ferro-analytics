@@ -1,9 +1,10 @@
 import { useMemo, useState, type ReactNode } from 'react'
 import {
+  Area,
   CartesianGrid,
+  ComposedChart,
   Legend,
   Line,
-  LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -18,6 +19,7 @@ import { descargarCSV } from '../lib/csv'
 import {
   useCategorias,
   useClasificacionABCXYZ,
+  useMigracionesABCXYZ,
   useProductosPrioritarios,
   usePronosticoCategoria,
   usePronosticoProducto,
@@ -42,6 +44,7 @@ const ETIQUETA_XYZ: Record<ClaseXYZ, string> = { X: 'Estable', Y: 'Variable', Z:
 
 const NOMBRES_MODELO: Record<string, string> = {
   ingenuo: 'Ingenuo',
+  naive_estacional: 'Naive estacional',
   media_movil: 'Media móvil',
   suavizado_exponencial: 'Suavizado exponencial',
   regresion: 'Regresión (tendencia + estacionalidad)',
@@ -99,6 +102,7 @@ function Pestana({ activa, onClick, children }: { activa: boolean; onClick: () =
 function ClasificacionABCXYZ() {
   const resumen = useResumenABCXYZ()
   const clasificacion = useClasificacionABCXYZ()
+  const migraciones = useMigracionesABCXYZ()
 
   const celdas = useMemo(() => {
     const m = new Map(resumen.data?.map((c) => [c.celda, c]))
@@ -186,8 +190,69 @@ function ClasificacionABCXYZ() {
             </table>
           </div>
         </Estado>
+
+        <div className="overflow-hidden rounded-[14px] border border-neutral-200 bg-white">
+          <div className="flex items-center justify-between border-b border-neutral-100 px-5 py-3.5">
+            <div>
+              <h2 className="text-sm font-extrabold text-neutral-900">Migraciones de celda</h2>
+              <p className="text-xs font-semibold text-neutral-500">
+                Productos que cambiaron de celda ABC-XYZ respecto al mes calendario anterior
+                (ventana móvil de 12 meses; p. ej. AX → AZ es una alerta más fuerte que el corte transversal solo)
+              </p>
+            </div>
+            <BotonFantasma
+              onClick={() => descargarCSV('migraciones_abc_xyz', migraciones.data ?? [])}
+              disabled={!migraciones.data?.length}
+            >
+              <IconoDescargar size={16} />
+              Exportar CSV
+            </BotonFantasma>
+          </div>
+          <Estado
+            cargando={migraciones.isLoading}
+            error={migraciones.error}
+            vacio={migraciones.data?.length === 0}
+            mensajeVacio="Sin cambios de celda detectados (hace falta más de 12 meses de historial para la primera comparación)."
+          >
+            <table className="w-full text-sm">
+              <thead className="bg-neutral-50 text-left text-[10.5px] font-extrabold uppercase tracking-wide text-neutral-500">
+                <tr>
+                  <th className="px-5 py-2.5">Mes</th>
+                  <th className="px-5 py-2.5">Código</th>
+                  <th className="px-5 py-2.5">Nombre</th>
+                  <th className="px-5 py-2.5">Cambio de celda</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-neutral-100">
+                {migraciones.data?.map((m, i) => (
+                  <tr key={`${m.mes}-${m.codigo}-${i}`}>
+                    <td className="px-5 py-2.5 text-[13px] font-semibold text-neutral-600">{m.mes}</td>
+                    <td className="px-5 py-2.5 font-mono text-xs font-bold text-neutral-700">{m.codigo}</td>
+                    <td className="px-5 py-2.5 text-[13px] font-bold text-neutral-900">{m.nombre}</td>
+                    <td className="px-5 py-2.5">
+                      <div className="flex items-center gap-2">
+                        <CeldaBadge celda={m.celda_anterior} />
+                        <span className="text-neutral-400">→</span>
+                        <CeldaBadge celda={m.celda_nueva} />
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </Estado>
+        </div>
       </div>
     </Estado>
+  )
+}
+
+function CeldaBadge({ celda }: { celda: string }) {
+  const abc = celda[0] as ClaseABC
+  return (
+    <span className={`rounded-full border px-2 py-0.5 text-[11px] font-extrabold ${COLOR_ABC[abc]}`}>
+      {celda}
+    </span>
   )
 }
 
@@ -224,11 +289,16 @@ function PrediccionDemanda() {
       mes: p.mes,
       real: p.unidades,
       pronostico: i === resultado.serie_historica.length - 1 ? p.unidades : undefined,
+      banda: undefined as [number, number] | undefined,
     }))
     const futuro = resultado.meses_pronosticados.map((mes, i) => ({
       mes,
       real: undefined as number | undefined,
       pronostico: resultado.pronostico[i],
+      banda: [
+        resultado.intervalo_confianza[i].limite_inferior,
+        resultado.intervalo_confianza[i].limite_superior,
+      ] as [number, number],
     }))
     return [...historico, ...futuro]
   }, [resultado])
@@ -318,12 +388,27 @@ function PrediccionDemanda() {
           <div className="flex flex-col gap-5">
             <div className="h-80 rounded-[14px] border border-neutral-200 bg-white p-6">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={datosGrafico}>
+                <ComposedChart data={datosGrafico}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e5e5" />
                   <XAxis dataKey="mes" fontSize={10.5} fontWeight={600} stroke="#a3a3a3" tickLine={false} />
                   <YAxis fontSize={11} stroke="#a3a3a3" tickLine={false} axisLine={false} />
-                  <Tooltip />
+                  <Tooltip
+                    formatter={(valor: unknown, nombre: unknown) =>
+                      Array.isArray(valor)
+                        ? [`${valor[0]} – ${valor[1]} uds`, nombre as string]
+                        : [valor as number, nombre as string]
+                    }
+                  />
                   <Legend wrapperStyle={{ fontSize: 12.5, fontWeight: 700 }} />
+                  <Area
+                    type="monotone"
+                    dataKey="banda"
+                    name="Banda de confianza (95%)"
+                    stroke="none"
+                    fill="#2a78d6"
+                    fillOpacity={0.12}
+                    isAnimationActive={false}
+                  />
                   <Line type="monotone" dataKey="real" name="Demanda real" stroke="#171717" strokeWidth={2.25} dot={false} />
                   <Line
                     type="monotone"
@@ -334,7 +419,7 @@ function PrediccionDemanda() {
                     strokeDasharray="5 5"
                     dot={false}
                   />
-                </LineChart>
+                </ComposedChart>
               </ResponsiveContainer>
             </div>
 
@@ -343,7 +428,7 @@ function PrediccionDemanda() {
                 <div className="border-b border-neutral-100 px-5 py-3.5">
                   <h2 className="text-sm font-extrabold text-neutral-900">Comparación de modelos</h2>
                   <p className="text-xs font-semibold text-neutral-500">
-                    Backtest sobre los últimos meses (MAE y MAPE, menor es mejor)
+                    Backtest sobre los últimos meses (MAE, MAPE y MASE, menor es mejor; MASE &lt; 1 supera al ingenuo)
                   </p>
                 </div>
                 <table className="w-full text-sm">
@@ -352,6 +437,7 @@ function PrediccionDemanda() {
                       <th className="px-5 py-2">Modelo</th>
                       <th className="px-5 py-2 text-right">MAE</th>
                       <th className="px-5 py-2 text-right">MAPE</th>
+                      <th className="px-5 py-2 text-right">MASE</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-neutral-100">
@@ -368,6 +454,9 @@ function PrediccionDemanda() {
                         <td className="px-5 py-2.5 text-right text-[13px] font-semibold text-neutral-700">{m.mae}</td>
                         <td className="px-5 py-2.5 text-right text-[13px] font-semibold text-neutral-700">
                           {m.mape !== null ? `${m.mape}%` : '—'}
+                        </td>
+                        <td className="px-5 py-2.5 text-right text-[13px] font-semibold text-neutral-700">
+                          {m.mase ?? '—'}
                         </td>
                       </tr>
                     ))}

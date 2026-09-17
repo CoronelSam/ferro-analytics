@@ -523,16 +523,25 @@ def _ver_prediccion_demanda() -> None:
 
 
 def _mostrar_pronostico(resultado: dict) -> None:
-    print("\n  Comparación de modelos (backtest, menor MAE es mejor):")
+    print("\n  Comparación de modelos (backtest, menor MAE/MASE es mejor):")
     _linea()
     for m in resultado["comparacion_modelos"]:
         marca = "  <- mejor" if m["modelo"] == resultado["mejor_modelo"] else ""
         mape_txt = f"{m['mape']:.2f}%" if m["mape"] is not None else "—"
-        print(f"    {m['modelo']:<22} MAE: {m['mae']:>9.3f}   MAPE: {mape_txt:>8}{marca}")
+        mase_txt = f"{m['mase']:.3f}" if m["mase"] is not None else "—"
+        print(
+            f"    {m['modelo']:<22} MAE: {m['mae']:>9.3f}   MAPE: {mape_txt:>8}   "
+            f"MASE: {mase_txt:>6}{marca}"
+        )
 
-    print(f"\n  Pronóstico ({resultado['mejor_modelo']}):")
-    for (anio, mes), valor in zip(resultado["meses_pronosticados"], resultado["pronostico"]):
-        print(f"    {anio}-{mes:02d}: {valor:>10.2f} uds")
+    print(f"\n  Pronóstico ({resultado['mejor_modelo']}), con banda de confianza 95%:")
+    for (anio, mes), valor, intervalo in zip(
+        resultado["meses_pronosticados"], resultado["pronostico"], resultado["intervalo_confianza"],
+    ):
+        print(
+            f"    {anio}-{mes:02d}: {valor:>10.2f} uds  "
+            f"[{intervalo['limite_inferior']:.2f} – {intervalo['limite_superior']:.2f}]"
+        )
 
 
 # ──────────────────────────────────────────────

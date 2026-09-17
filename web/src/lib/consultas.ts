@@ -10,6 +10,7 @@ import type {
   EntidadImportable,
   EstadoImportacionBD,
   LoteMovimientos,
+  MigracionCelda,
   Movimiento,
   Producto,
   ProductoInmovilizado,
@@ -109,6 +110,16 @@ export function useProductosPrioritarios() {
   return useQuery({
     queryKey: ['analitica', 'prediccion', 'productos-prioritarios'],
     queryFn: () => obtenerJSON<string[]>('/api/analitica/prediccion/productos-prioritarios'),
+  })
+}
+
+export function useMigracionesABCXYZ(ventanaMeses = 12) {
+  return useQuery({
+    queryKey: ['analitica', 'abc-xyz', 'migraciones', ventanaMeses],
+    queryFn: () =>
+      obtenerJSON<MigracionCelda[]>(
+        `/api/analitica/abc-xyz/migraciones?ventana_meses=${ventanaMeses}`,
+      ),
   })
 }
 
