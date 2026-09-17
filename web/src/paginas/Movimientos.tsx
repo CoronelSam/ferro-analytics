@@ -2,15 +2,19 @@ import { useState, type ReactNode } from 'react'
 import { Estado } from '../componentes/Estado'
 import { Cabecera } from '../componentes/Cabecera'
 import { BotonFantasma, BotonPrimario } from '../componentes/Boton'
+import { Paginador } from '../componentes/Paginador'
 import { IconoDescargar, IconoImportar } from '../componentes/Icono'
 import { useMovimientos } from '../lib/consultas'
 import { descargarCSV } from '../lib/csv'
+import { usePaginacion } from '../lib/paginacion'
 
 const OPCIONES_TIPO = [
   { valor: '', etiqueta: 'Todos' },
   { valor: 'E', etiqueta: 'Entradas' },
   { valor: 'S', etiqueta: 'Salidas' },
 ] as const
+
+const MOVIMIENTOS_POR_PAGINA = 25
 
 export function Movimientos() {
   const [fechaDesde, setFechaDesde] = useState('')
@@ -22,6 +26,8 @@ export function Movimientos() {
     fechaHasta: fechaHasta || undefined,
     tipo: tipo || undefined,
   })
+
+  const paginacion = usePaginacion(movimientos.data ?? [], MOVIMIENTOS_POR_PAGINA)
 
   const entradas = movimientos.data?.filter((m) => m.tipo === 'E').reduce((s, m) => s + m.cantidad, 0) ?? 0
   const salidas = movimientos.data?.filter((m) => m.tipo === 'S').reduce((s, m) => s + m.cantidad, 0) ?? 0
@@ -49,7 +55,10 @@ export function Movimientos() {
               <input
                 type="date"
                 value={fechaDesde}
-                onChange={(e) => setFechaDesde(e.target.value)}
+                onChange={(e) => {
+                  setFechaDesde(e.target.value)
+                  paginacion.irA(1)
+                }}
                 className="w-[150px] rounded-[9px] border border-[#DCE5EF] px-3 py-2 text-[13px] font-bold text-[#243B55]"
               />
             </Campo>
@@ -57,7 +66,10 @@ export function Movimientos() {
               <input
                 type="date"
                 value={fechaHasta}
-                onChange={(e) => setFechaHasta(e.target.value)}
+                onChange={(e) => {
+                  setFechaHasta(e.target.value)
+                  paginacion.irA(1)
+                }}
                 className="w-[150px] rounded-[9px] border border-[#DCE5EF] px-3 py-2 text-[13px] font-bold text-[#243B55]"
               />
             </Campo>
@@ -66,7 +78,10 @@ export function Movimientos() {
                 {OPCIONES_TIPO.map((o) => (
                   <button
                     key={o.valor}
-                    onClick={() => setTipo(o.valor)}
+                    onClick={() => {
+                      setTipo(o.valor)
+                      paginacion.irA(1)
+                    }}
                     className={`rounded-[7px] px-3.5 py-2 text-[12.5px] font-bold ${
                       tipo === o.valor ? 'bg-white text-[#13233A] shadow-sm' : 'text-[#6D7B8F]'
                     }`}
@@ -105,7 +120,7 @@ export function Movimientos() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-100">
-                {movimientos.data?.map((m) => (
+                {paginacion.items.map((m) => (
                   <tr key={m.id_movimiento}>
                     <td className="px-4 py-3 text-[12.5px] font-semibold text-[#6D7B8F]">{m.id_movimiento}</td>
                     <td className="px-4 py-3 font-mono text-xs font-bold text-[#243B55]">{m.codigo_producto}</td>
@@ -124,6 +139,13 @@ export function Movimientos() {
                 ))}
               </tbody>
             </table>
+            <Paginador
+              pagina={paginacion.pagina}
+              totalPaginas={paginacion.totalPaginas}
+              total={paginacion.total}
+              porPagina={paginacion.porPagina}
+              onIrA={paginacion.irA}
+            />
           </div>
         </Estado>
       </div>

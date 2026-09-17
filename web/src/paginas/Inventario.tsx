@@ -4,10 +4,14 @@ import { Cabecera } from '../componentes/Cabecera'
 import { CategoriaBadge } from '../componentes/CategoriaBadge'
 import { BadgeEstado } from '../componentes/BadgeEstado'
 import { BotonFantasma, BotonPrimario } from '../componentes/Boton'
+import { Paginador } from '../componentes/Paginador'
 import { IconoBuscar, IconoChevronAbajo, IconoDescargar, IconoImportar } from '../componentes/Icono'
 import { formatearLempiras } from '../lib/api'
 import { useCategorias, useProductos } from '../lib/consultas'
 import { descargarCSV } from '../lib/csv'
+import { usePaginacion } from '../lib/paginacion'
+
+const PRODUCTOS_POR_PAGINA = 20
 
 export function Inventario() {
   const productos = useProductos()
@@ -25,6 +29,8 @@ export function Inventario() {
       return true
     })
   }, [productos.data, busqueda, idCategoria, soloStockBajo])
+
+  const paginacion = usePaginacion(filtrados, PRODUCTOS_POR_PAGINA)
 
   const bajos = (productos.data ?? []).filter((p) => p.stock_actual > 0 && p.stock_actual < p.stock_minimo).length
   const agotados = (productos.data ?? []).filter((p) => p.stock_actual === 0).length
@@ -54,7 +60,10 @@ export function Inventario() {
             <IconoBuscar size={16} className="text-[#8A98AA]" />
             <input
               value={busqueda}
-              onChange={(e) => setBusqueda(e.target.value)}
+              onChange={(e) => {
+                setBusqueda(e.target.value)
+                paginacion.irA(1)
+              }}
               placeholder="Buscar por código o nombre..."
               className="w-full bg-transparent text-[13px] font-semibold text-[#243B55] placeholder:text-[#8A98AA] focus:outline-none"
             />
@@ -63,7 +72,10 @@ export function Inventario() {
           <div className="relative">
             <select
               value={idCategoria ?? ''}
-              onChange={(e) => setIdCategoria(e.target.value ? Number(e.target.value) : null)}
+              onChange={(e) => {
+                setIdCategoria(e.target.value ? Number(e.target.value) : null)
+                paginacion.irA(1)
+              }}
               className="appearance-none rounded-xl border border-[#DCE5EF] bg-white py-2.5 pl-3.5 pr-9 text-[12.5px] font-bold text-[#43566F]"
             >
               <option value="">Todas las categorías</option>
@@ -73,7 +85,10 @@ export function Inventario() {
           </div>
 
           <button
-            onClick={() => setSoloStockBajo((v) => !v)}
+            onClick={() => {
+              setSoloStockBajo((v) => !v)
+              paginacion.irA(1)
+            }}
             className={`rounded-xl border px-3.5 py-2.5 text-[12.5px] font-extrabold ${
               soloStockBajo
                 ? 'border-[#124E96] bg-[#124E96] text-white shadow-[0_6px_16px_rgba(18,78,150,.16)]'
@@ -99,7 +114,7 @@ export function Inventario() {
                 </tr>
               </thead>
               <tbody>
-                {filtrados.map((p) => {
+                {paginacion.items.map((p) => {
                   const agotado = p.stock_actual === 0
                   const bajo = !agotado && p.stock_actual < p.stock_minimo
                   const estado = agotado ? 'agotado' : bajo ? 'bajo' : 'normal'
@@ -119,10 +134,13 @@ export function Inventario() {
                 })}
               </tbody>
             </table>
-            <div className="flex items-center justify-between border-t border-[#E8EEF5] bg-[#FAFBFD] px-4 py-3 text-xs font-semibold text-[#6D7B8F]">
-              <span>Mostrando {filtrados.length} de {productos.data?.length ?? 0} productos</span>
-              {(busqueda || idCategoria !== null || soloStockBajo) && <span>Filtros activos</span>}
-            </div>
+            <Paginador
+              pagina={paginacion.pagina}
+              totalPaginas={paginacion.totalPaginas}
+              total={paginacion.total}
+              porPagina={paginacion.porPagina}
+              onIrA={paginacion.irA}
+            />
           </div>
         </Estado>
       </div>

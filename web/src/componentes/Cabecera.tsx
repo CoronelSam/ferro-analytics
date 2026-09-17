@@ -10,7 +10,7 @@ export function Cabecera({
   children?: ReactNode
 }) {
   return (
-    <header className="flex items-center justify-between border-b border-[#DCE5EF] bg-white px-8 py-5 shadow-[0_1px_0_rgba(11,46,89,0.015)]">
+    <header className="sticky top-0 z-10 flex items-center justify-between border-b border-[#DCE5EF] bg-white px-8 py-5 shadow-[0_1px_0_rgba(11,46,89,0.015)]">
       <div className="flex items-start gap-3">
         <span className="mt-1 h-9 w-1.5 rounded-full bg-[#FF7A1A]" />
         <div>

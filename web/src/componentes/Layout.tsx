@@ -26,8 +26,8 @@ export function Layout() {
   const numAlertas = alertas.data?.length ?? 0
 
   return (
-    <div className="flex min-h-screen bg-[#F5F8FC]">
-      <aside className="flex w-[272px] flex-shrink-0 flex-col border-r border-[#DCE5EF] bg-white px-4 py-4 shadow-[6px_0_24px_rgba(11,46,89,0.035)]">
+    <div className="flex h-screen overflow-hidden bg-[#F5F8FC]">
+      <aside className="flex h-screen w-[272px] flex-shrink-0 flex-col overflow-y-auto border-r border-[#DCE5EF] bg-white px-4 py-4 shadow-[6px_0_24px_rgba(11,46,89,0.035)]">
         <div className="mb-5 border-b border-[#E5ECF4] px-1 pb-5 pt-1">
           <img
             src="/ferroanalytics-logo.png"
@@ -77,7 +77,7 @@ export function Layout() {
         </div>
       </aside>
 
-      <main className="min-w-0 flex-1">
+      <main className="h-screen min-w-0 flex-1 overflow-y-auto">
         <Outlet />
       </main>
     </div>

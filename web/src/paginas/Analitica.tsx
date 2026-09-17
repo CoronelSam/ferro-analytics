@@ -13,9 +13,11 @@ import {
 import { Estado } from '../componentes/Estado'
 import { Cabecera } from '../componentes/Cabecera'
 import { BotonFantasma } from '../componentes/Boton'
+import { Paginador } from '../componentes/Paginador'
 import { IconoDescargar } from '../componentes/Icono'
 import { formatearLempiras } from '../lib/api'
 import { descargarCSV } from '../lib/csv'
+import { usePaginacion } from '../lib/paginacion'
 import {
   useCategorias,
   useClasificacionABCXYZ,
@@ -42,6 +44,8 @@ const COLOR_ABC: Record<ClaseABC, string> = {
 // Etiquetas en lenguaje llano para las clases técnicas ABC/XYZ.
 const ETIQUETA_ABC: Record<ClaseABC, string> = { A: 'Alta', B: 'Media', C: 'Baja' }
 const ETIQUETA_XYZ: Record<ClaseXYZ, string> = { X: 'Estable', Y: 'Variable', Z: 'Irregular' }
+
+const FILAS_POR_PAGINA = 15
 
 const NOMBRES_MODELO: Record<string, string> = {
   ingenuo: 'Ingenuo',
@@ -105,6 +109,9 @@ function ClasificacionABCXYZ() {
   const clasificacion = useClasificacionABCXYZ()
   const migraciones = useMigracionesABCXYZ()
 
+  const paginaClasificacion = usePaginacion(clasificacion.data ?? [], FILAS_POR_PAGINA)
+  const paginaMigraciones = usePaginacion(migraciones.data ?? [], FILAS_POR_PAGINA)
+
   const celdas = useMemo(() => {
     const m = new Map(resumen.data?.map((c) => [c.celda, c]))
     return CLASES_ABC.flatMap((abc) => CLASES_XYZ.map((xyz) => m.get(`${abc}${xyz}`)))
@@ -167,7 +174,7 @@ function ClasificacionABCXYZ() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-100">
-                {clasificacion.data?.map((r) => (
+                {paginaClasificacion.items.map((r) => (
                   <tr key={r.codigo}>
                     <td className="px-4 py-3 font-mono text-xs font-bold text-[#3E536C]">{r.codigo}</td>
                     <td className="px-4 py-3 text-[13px] font-bold text-[#13233A]">{r.nombre}</td>
@@ -189,6 +196,13 @@ function ClasificacionABCXYZ() {
                 ))}
               </tbody>
             </table>
+            <Paginador
+              pagina={paginaClasificacion.pagina}
+              totalPaginas={paginaClasificacion.totalPaginas}
+              total={paginaClasificacion.total}
+              porPagina={paginaClasificacion.porPagina}
+              onIrA={paginaClasificacion.irA}
+            />
           </div>
         </Estado>
 
@@ -225,7 +239,7 @@ function ClasificacionABCXYZ() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-100">
-                {migraciones.data?.map((m, i) => (
+                {paginaMigraciones.items.map((m, i) => (
                   <tr key={`${m.mes}-${m.codigo}-${i}`}>
                     <td className="px-5 py-2.5 text-[13px] font-semibold text-neutral-600">{m.mes}</td>
                     <td className="px-5 py-2.5 font-mono text-xs font-bold text-neutral-700">{m.codigo}</td>
@@ -241,6 +255,13 @@ function ClasificacionABCXYZ() {
                 ))}
               </tbody>
             </table>
+            <Paginador
+              pagina={paginaMigraciones.pagina}
+              totalPaginas={paginaMigraciones.totalPaginas}
+              total={paginaMigraciones.total}
+              porPagina={paginaMigraciones.porPagina}
+              onIrA={paginaMigraciones.irA}
+            />
           </Estado>
         </div>
       </div>
@@ -518,6 +539,7 @@ function PrediccionDemanda() {
 
 function ResumenProductosAX({ n }: { n: number }) {
   const lote = usePronosticoLote({ n })
+  const paginacion = usePaginacion(lote.data ?? [], FILAS_POR_PAGINA)
 
   const filasExportables = useMemo(
     () =>
@@ -570,7 +592,7 @@ function ResumenProductosAX({ n }: { n: number }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-neutral-100">
-            {lote.data?.map((r) => (
+            {paginacion.items.map((r) => (
               <tr key={r.codigo}>
                 <td className="px-5 py-3 font-mono text-xs font-bold text-[#3E536C]">{r.codigo}</td>
                 <td className="px-5 py-3 text-[13px] font-semibold text-[#243B55]">
@@ -587,6 +609,13 @@ function ResumenProductosAX({ n }: { n: number }) {
             ))}
           </tbody>
         </table>
+        <Paginador
+          pagina={paginacion.pagina}
+          totalPaginas={paginacion.totalPaginas}
+          total={paginacion.total}
+          porPagina={paginacion.porPagina}
+          onIrA={paginacion.irA}
+        />
       </Estado>
     </div>
   )
