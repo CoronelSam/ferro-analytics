@@ -54,7 +54,7 @@ class FerroAnalyticsError(Exception):
 
 
 class ErrorImportacion(FerroAnalyticsError):
-    """Error al leer o validar un archivo CSV de entrada (columnas faltantes, archivo ilegible, etc.)."""
+    """Error al leer datos de entrada, sea un CSV (columnas faltantes, archivo ilegible) o una base de datos externa (conexión, tabla inexistente)."""
 
 
 class ErrorAlmacenamiento(FerroAnalyticsError):

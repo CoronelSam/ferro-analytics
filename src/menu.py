@@ -11,6 +11,7 @@ from datetime import datetime
 import src.almacenamiento as alm
 import src.clasificacion as clf
 import src.importador as imp
+import src.importador_bd as imp_bd
 import src.prediccion as pred
 import src.reportes as rep
 from src.excepciones import ErrorAlmacenamiento, ErrorImportacion, FerroAnalyticsError
@@ -522,6 +523,59 @@ def _mostrar_pronostico(resultado: dict) -> None:
 
 
 # ──────────────────────────────────────────────
+# Opción 9: Importar desde base de datos (Postgres)
+# ──────────────────────────────────────────────
+
+def _importar_desde_bd() -> None:
+    _titulo("IMPORTAR DESDE BASE DE DATOS (POSTGRES)")
+    print("  Requiere la variable de entorno FERRO_BD_URL, p. ej.:")
+    print("    postgresql+psycopg://usuario:clave@host:5432/basededatos")
+
+    try:
+        engine = imp_bd.crear_engine()
+    except ErrorImportacion as e:
+        print(f"\n  Error: {e}")
+        _pausar()
+        return
+
+    print("\n  Conexión establecida.")
+    print("  Tipo de datos:")
+    print("  [1] Categorías")
+    print("  [2] Productos")
+    print("  [3] Movimientos")
+    tipo = _pedir_opcion({"1", "2", "3"})
+
+    try:
+        if tipo == "1":
+            aceptadas, rechazadas = imp_bd.importar_categorias_desde_bd(engine)
+            if aceptadas:
+                alm.guardar_categorias(aceptadas)
+            _mostrar_resultado_importacion("categorías", len(aceptadas), rechazadas)
+        elif tipo == "2":
+            aceptados, rechazados = imp_bd.importar_productos_desde_bd(engine)
+            if aceptados:
+                resultado = alm.guardar_productos(aceptados)
+                print(f"\n  Insertados: {resultado['insertados']}  |  "
+                      f"Actualizados: {resultado['actualizados']}")
+            _mostrar_resultado_importacion("productos", len(aceptados), rechazados)
+        else:
+            codigos = alm.obtener_codigos_productos()
+            ids_existentes = alm.obtener_ids_movimientos()
+            desde_id = max(ids_existentes) if ids_existentes else None
+            aceptados, rechazados = imp_bd.importar_movimientos_desde_bd(
+                engine, codigos, ids_existentes, desde_id=desde_id)
+            if aceptados:
+                alm.guardar_movimientos(aceptados)
+            _mostrar_resultado_importacion("movimientos", len(aceptados), rechazados)
+    except ErrorImportacion as e:
+        print(f"\n  Error al importar: {e}")
+    except ErrorAlmacenamiento as e:
+        print(f"\n  Error al guardar los datos: {e}")
+
+    _pausar()
+
+
+# ──────────────────────────────────────────────
 # Bucle principal
 # ──────────────────────────────────────────────
 
@@ -536,8 +590,9 @@ def ejecutar() -> None:
         print("  [5] Ver alertas de stock bajo")
         print("  [6] Clasificación ABC-XYZ")
         print("  [7] Predicción de demanda")
-        print("  [8] Salir")
-        opcion = _pedir_opcion({"1", "2", "3", "4", "5", "6", "7", "8"})
+        print("  [8] Importar desde base de datos (Postgres)")
+        print("  [9] Salir")
+        opcion = _pedir_opcion({"1", "2", "3", "4", "5", "6", "7", "8", "9"})
 
         try:
             if opcion == "1":
@@ -555,6 +610,8 @@ def ejecutar() -> None:
             elif opcion == "7":
                 _ver_prediccion_demanda()
             elif opcion == "8":
+                _importar_desde_bd()
+            elif opcion == "9":
                 print("\n  Hasta luego.\n")
                 break
         except FerroAnalyticsError as e:
